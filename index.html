@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>JI_BRAVE USD</title>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--void:#020408;--obsidian:#08090d;--glass:#0d1018;--glass2:#111520;--glass3:#161c2e;--rim:rgba(255,255,255,0.06);--rim2:rgba(255,255,255,0.03);--gold:#c9922a;--gold2:#e8b84b;--gold3:#f5d070;--goldglow:rgba(201,146,42,0.22);--aurora1:#0ff4c6;--aurora2:#00b4ff;--danger:#ff4d6d;--success:#00e5a0;--ink:#f0ece3;--ink2:#8a8070;--ink3:#3a3530;--fh:'Clash Display',sans-serif;--fb:'Geist Mono',monospace;--fi:'Instrument Serif',serif;--r:18px}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--fb);background:var(--void);color:var(--ink);max-width:480px;margin:0 auto;position:relative;overflow:hidden}
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.7}
+body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");opacity:0.028;mix-blend-mode:overlay}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;background:transparent;-webkit-overflow-scrolling:touch;z-index:2}
+.page.active{display:flex}
+.page.enter{animation:enterPage .42s cubic-bezier(.16,1,.3,1) both}
+.page.back{animation:backPage .42s cubic-bezier(.16,1,.3,1) both}
+@keyframes enterPage{from{transform:translateX(100%) scale(.96);opacity:0}to{transform:none;opacity:1}}
+@keyframes backPage{from{transform:translateX(-18%) scale(.97);opacity:0}to{transform:none;opacity:1}}
+@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes goldPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,146,42,.45)}60%{box-shadow:0 0 0 10px rgba(201,146,42,0)}}
+@keyframes scanline{0%{top:-100%}100%{top:200%}}
+@keyframes rotateOrb{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-55%)}}
+@keyframes blinkDot{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,0.4)}50%{box-shadow:0 0 0 6px rgba(0,229,160,0)}}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 14px;position:sticky;top:0;z-index:40;background:rgba(2,4,8,.82);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--rim)}
+.topbar::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.35}
+.logobox{display:flex;align-items:center;gap:10px}
+.logo-gem{width:38px;height:38px;border-radius:11px;position:relative;background:linear-gradient(135deg,#1a1008,#2e1c06);border:1px solid rgba(201,146,42,.35);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 0 18px rgba(201,146,42,.22),inset 0 1px 0 rgba(255,220,100,.15)}
+.logo-gem::before{content:'';position:absolute;inset:-50%;background:conic-gradient(from 0deg,transparent 0%,rgba(201,146,42,.3) 50%,transparent 100%);animation:rotateOrb 4s linear infinite}
+.logo-gem .gem-ico{position:relative;z-index:1;font-size:18px}
+.logo-wordmark{font-family:var(--fh);font-size:16px;font-weight:700;letter-spacing:.5px}
+.logo-wordmark em{font-style:normal;background:linear-gradient(90deg,var(--gold),var(--gold3),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.curr-pill{display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:22px;background:rgba(201,146,42,.08);border:1px solid rgba(201,146,42,.25);font-family:var(--fh);font-size:11px;font-weight:600;letter-spacing:.5px;cursor:pointer;transition:all .2s;color:var(--gold2)}
+.curr-pill:active{background:rgba(201,146,42,.15);transform:scale(.97)}
+.curr-pill .pill-arrow{opacity:.6;font-size:9px}
+.ham{width:38px;height:38px;border-radius:11px;background:var(--glass2);border:1px solid var(--rim);display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:4px;padding:0 10px;cursor:pointer;transition:all .2s}
+.ham:active{background:var(--glass3)}
+.ham span{display:block;height:1.5px;background:var(--ink);border-radius:2px}
+.ham span:nth-child(1){width:18px}
+.ham span:nth-child(2){width:12px;background:var(--gold2)}
+.ham span:nth-child(3){width:8px}
+.back-btn{width:38px;height:38px;border-radius:11px;background:var(--glass2);border:1px solid var(--rim);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:var(--ink);transition:all .2s}
+.back-btn:active{background:var(--glass3)}
+.gcard{background:linear-gradient(145deg,rgba(13,16,24,.95),rgba(8,9,13,.98));border:1px solid var(--rim);border-radius:var(--r);position:relative;overflow:hidden}
+.gcard::before{content:'';position:absolute;inset:0;border-radius:var(--r);background:linear-gradient(135deg,rgba(255,255,255,.04) 0%,transparent 60%);pointer-events:none}
+.gold-line{height:1px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold3),var(--gold),transparent);opacity:.25;margin:0}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-family:var(--fh);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--ink2);margin-bottom:8px}
+.iw{position:relative}
+.iico{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;z-index:1}
+input[type=email],input[type=password],input[type=text],input[type=number],select{width:100%;background:rgba(255,255,255,.03);border:1px solid var(--rim);border-radius:13px;padding:14px 14px 14px 42px;font-size:13px;font-family:var(--fb);color:var(--ink);outline:none;transition:border-color .2s,background .2s,box-shadow .2s;-webkit-appearance:none}
+input:focus,select:focus{border-color:rgba(201,146,42,.5);background:rgba(201,146,42,.04);box-shadow:0 0 0 3px rgba(201,146,42,.08)}
+input::placeholder{color:var(--ink3)}
+select option{background:#0d1018;color:var(--ink)}
+.eye-btn{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:16px;cursor:pointer;color:var(--ink2);z-index:1}
+.btn-gold{width:100%;border:none;border-radius:14px;padding:16px;font-family:var(--fh);font-size:14px;font-weight:700;letter-spacing:.8px;cursor:pointer;position:relative;overflow:hidden;background:linear-gradient(135deg,#7a4d0a,#c9922a,#e8b84b,#c9922a,#7a4d0a);background-size:300% 100%;color:#0a0600;box-shadow:0 4px 24px rgba(201,146,42,.4),inset 0 1px 0 rgba(255,220,120,.3);animation:shimmer 3s ease infinite;transition:transform .18s,box-shadow .18s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-gold:active{transform:scale(.97);box-shadow:0 2px 12px rgba(201,146,42,.3)}
+.btn-glass{width:100%;border:1px solid var(--rim);border-radius:14px;padding:14px;background:rgba(255,255,255,.03);color:var(--ink);font-family:var(--fh);font-size:13px;font-weight:600;letter-spacing:.4px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s}
+.btn-glass:active{background:var(--glass3)}
+.div-row{display:flex;align-items:center;gap:10px;margin:15px 0}
+.div-line{flex:1;height:1px;background:var(--rim)}
+.div-txt{font-family:var(--fh);font-size:10px;color:var(--ink3);letter-spacing:2px;text-transform:uppercase}
+.link-line{text-align:center;font-family:var(--fh);font-size:12px;color:var(--ink2);margin-top:18px}
+.link-line a{color:var(--gold2);text-decoration:none;font-weight:600;cursor:pointer}
+.login-scroll{flex:1;overflow-y:auto;padding:22px 18px 50px}
+.brand-hero{text-align:center;padding:28px 0 32px;animation:rise .6s ease both;position:relative;overflow:hidden}
+.brand-hero::after{content:'';position:absolute;left:0;right:0;height:60px;background:linear-gradient(to bottom,transparent,rgba(201,146,42,.03),transparent);pointer-events:none;z-index:10;animation:scanline 4s linear infinite}
+.brand-sigil{width:80px;height:80px;border-radius:24px;margin:0 auto 18px;background:linear-gradient(135deg,#120a02,#2a1506);border:1px solid rgba(201,146,42,.3);display:flex;align-items:center;justify-content:center;font-size:34px;position:relative;overflow:hidden;box-shadow:0 0 40px rgba(201,146,42,.2),0 8px 32px rgba(0,0,0,.5)}
+.brand-sigil::before{content:'';position:absolute;inset:-50%;background:conic-gradient(from 0deg,transparent,rgba(201,146,42,.25),transparent 40%);animation:rotateOrb 5s linear infinite}
+.brand-sigil .sico{position:relative;z-index:1}
+.brand-hero h1{font-family:var(--fh);font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--ink),var(--gold3),var(--ink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;letter-spacing:-.3px}
+.brand-hero p{font-size:12px;color:var(--ink2);line-height:1.7}
+.fcard{padding:22px 18px 4px;margin-bottom:16px;animation:rise .55s ease .1s both}
+.benefit-strip{display:flex;gap:8px;margin-top:22px;animation:rise .55s ease .3s both}
+.bchip{flex:1;background:var(--glass2);border-radius:12px;padding:12px 8px;border:1px solid var(--rim);text-align:center}
+.bchip .bico{font-size:20px;margin-bottom:5px}
+.bchip .btit{font-family:var(--fh);font-size:11px;font-weight:600;color:var(--gold2);margin-bottom:2px}
+.bchip .bdsc{font-size:9px;color:var(--ink2);line-height:1.5}
+.signup-scroll{flex:1;overflow-y:auto;padding:18px 18px 50px}
+.welcome-badge{background:linear-gradient(135deg,rgba(201,146,42,.12),rgba(232,184,75,.06));border:1px solid rgba(201,146,42,.25);border-radius:14px;padding:15px 16px;margin-bottom:18px;display:flex;align-items:center;gap:13px;animation:rise .5s ease both;position:relative;overflow:hidden}
+.welcome-badge::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(201,146,42,.08),transparent);animation:shimmer 2.5s ease infinite}
+.wbico{font-size:30px;flex-shrink:0}
+.wbtit{font-family:var(--fh);font-size:15px;font-weight:700;color:var(--gold2);margin-bottom:3px}
+.wbdsc{font-size:11px;color:var(--ink2);line-height:1.5}
+.steps{display:flex;margin-bottom:20px;gap:4px;animation:rise .5s ease .08s both}
+.stp{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative}
+.stp::after{content:'';position:absolute;top:12px;left:calc(50% + 14px);right:0;height:1px;background:var(--rim);z-index:0}
+.stp:last-child::after{display:none}
+.stp-n{width:26px;height:26px;border-radius:50%;background:var(--glass3);border:1px solid var(--rim);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:11px;font-weight:600;position:relative;z-index:1;color:var(--ink2)}
+.stp.active .stp-n{background:linear-gradient(135deg,#7a4d0a,#c9922a);border-color:var(--gold);color:#0a0600;box-shadow:0 0 12px rgba(201,146,42,.4)}
+.stp.done .stp-n{background:rgba(0,229,160,.15);border-color:var(--success);color:var(--success)}
+.stp-l{font-family:var(--fh);font-size:9px;color:var(--ink3);letter-spacing:1px;text-transform:uppercase}
+.stp.active .stp-l{color:var(--gold2)}
+.stp.done .stp-l{color:var(--success)}
+.str-bar{display:flex;gap:3px;margin-top:7px}
+.str-seg{flex:1;height:2px;border-radius:2px;background:var(--glass3);transition:background .28s}
+.str-lbl{font-size:9px;color:var(--ink3);margin-top:3px;font-family:var(--fh);letter-spacing:1px;text-transform:uppercase}
+.check-row{display:flex;gap:11px;align-items:flex-start;margin-top:6px}
+.check-row input[type=checkbox]{width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:var(--gold);cursor:pointer}
+.check-row label{font-family:var(--fh);font-size:11px;color:var(--ink2);text-transform:none;letter-spacing:0;font-weight:400;line-height:1.65;margin-bottom:0}
+.check-row label a{color:var(--gold2);text-decoration:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#homePage{padding-bottom:84px}
+.home-scroll{padding:14px 16px}
+.balance-hero{border-radius:22px;padding:0;margin-bottom:14px;position:relative;overflow:hidden;background:linear-gradient(135deg,#0e0802,#1c1004,#0e0802);border:1px solid rgba(201,146,42,.2);box-shadow:0 8px 40px rgba(0,0,0,.5),0 0 0 1px rgba(201,146,42,.08);animation:rise .4s ease both}
+.bal-aurora{position:absolute;inset:0;overflow:hidden;border-radius:22px}
+.bal-aurora::before{content:'';position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(201,146,42,.18) 0%,transparent 70%);top:-80px;right:-80px;animation:rotateOrb 12s linear infinite}
+.bal-aurora::after{content:'';position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(15,244,198,.08) 0%,transparent 70%);bottom:-60px;left:-40px}
+.bal-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(201,146,42,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(201,146,42,.04) 1px,transparent 1px);background-size:32px 32px;border-radius:22px}
+.bal-content{position:relative;z-index:2;padding:22px 22px 20px}
+.bal-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
+.bal-badge{font-family:var(--fh);font-size:9px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--gold);background:rgba(201,146,42,.1);border:1px solid rgba(201,146,42,.2);padding:4px 10px;border-radius:20px}
+.bal-live{display:flex;align-items:center;gap:5px;font-family:var(--fh);font-size:9px;color:var(--success);letter-spacing:1px;text-transform:uppercase}
+.bal-live-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:blinkDot 1.2s ease infinite}
+.bal-label{font-family:var(--fh);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:6px}
+.bal-amount{font-family:var(--fh);font-size:48px;font-weight:700;letter-spacing:-1.5px;line-height:1;background:linear-gradient(135deg,var(--gold2),var(--gold3),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:3px}
+.bal-currency{font-family:var(--fb);font-size:11px;color:var(--ink2);letter-spacing:2px;margin-bottom:14px}
+.bal-name{font-family:var(--fi);font-style:italic;font-size:15px;color:rgba(240,236,227,.6)}
+.bal-rule{height:1px;background:linear-gradient(90deg,transparent,rgba(201,146,42,.25),transparent);margin:14px 0}
+.bal-stats{display:flex;gap:0}
+.bal-stat{flex:1;text-align:center}
+.bal-stat:not(:last-child){border-right:1px solid rgba(201,146,42,.1)}
+.bstat-val{font-family:var(--fh);font-size:14px;font-weight:700;color:var(--gold2)}
+.bstat-lbl{font-family:var(--fh);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-top:2px}
+.live-card{border-radius:14px;padding:13px 15px;margin-bottom:12px;background:linear-gradient(135deg,rgba(15,244,198,.08),rgba(0,180,255,.05));border:1px solid rgba(15,244,198,.15);display:flex;align-items:flex-start;gap:11px;animation:rise .4s ease .06s both;position:relative;overflow:hidden}
+.live-card::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(15,244,198,.05),transparent);animation:shimmer 3s ease infinite}
+.live-pulse{width:8px;height:8px;border-radius:50%;background:var(--aurora1);flex-shrink:0;margin-top:5px;animation:goldPulse 1.5s ease infinite;box-shadow:0 0 8px var(--aurora1)}
+.notif-user{font-family:var(--fh);font-size:13px;font-weight:600;color:var(--aurora1);margin-bottom:3px}
+.notif-msg{font-size:12px;color:var(--ink2);line-height:1.45}
+.notif-time{font-family:var(--fh);font-size:9px;color:var(--ink3);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+.ticker-bar{border-radius:10px;padding:9px 14px;margin-bottom:12px;background:var(--glass2);border:1px solid var(--rim);display:flex;align-items:center;gap:10px;overflow:hidden;animation:rise .4s ease .1s both}
+.tick-live{font-family:var(--fh);font-size:8px;font-weight:600;letter-spacing:2px;color:var(--success);text-transform:uppercase;flex-shrink:0;display:flex;align-items:center;gap:4px}
+.tick-dot{width:5px;height:5px;border-radius:50%;background:var(--success);animation:blinkDot 1s ease infinite}
+.tick-text{font-size:11px;color:var(--ink2);white-space:nowrap;animation:ticker 22s linear infinite;font-family:var(--fb)}
+.earn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;animation:rise .4s ease .12s both}
+.earn-chip{padding:16px 16px;border-radius:14px}
+.earn-chip-lbl{font-family:var(--fh);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink2);margin-bottom:6px}
+.earn-chip-val{font-family:var(--fh);font-size:24px;font-weight:700;color:var(--ink)}
+.earn-chip-val.gold{background:linear-gradient(90deg,var(--gold),var(--gold3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.share-section{padding:18px 16px;margin-bottom:12px;animation:rise .4s ease .15s both}
+.share-heading{font-family:var(--fh);font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.share-heading::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(201,146,42,.25),transparent)}
+.share-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.shr-btn{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer}
+.shr-ico{width:56px;height:56px;border-radius:16px;background:var(--glass2);border:1px solid var(--rim);display:flex;align-items:center;justify-content:center;font-size:21px;transition:all .2s;position:relative;overflow:hidden}
+.shr-ico::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.04),transparent)}
+.shr-btn:active .shr-ico{background:rgba(201,146,42,.12);border-color:rgba(201,146,42,.3);transform:scale(.93)}
+.shr-lbl{font-family:var(--fh);font-size:9px;color:var(--ink2);letter-spacing:.5px;text-align:center}
+.info-sec{padding:18px 18px;margin-bottom:12px;animation:rise .4s ease .18s both}
+.info-tag{font-family:var(--fh);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.info-tag::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(201,146,42,.25),transparent)}
+.info-sec p{font-family:var(--fh);font-size:13px;line-height:1.75;color:var(--ink);margin-bottom:10px}
+.info-sec p strong{color:var(--gold2)}
+.ref-lbl{font-family:var(--fh);font-size:11px;font-weight:600;color:var(--ink);margin-bottom:10px;letter-spacing:.3px}
+.ref-row{display:flex;gap:9px}
+.ref-box{flex:1;background:rgba(0,0,0,.4);border:1px solid var(--rim);border-radius:12px;padding:12px 13px;font-family:var(--fb);font-size:11px;color:var(--ink2);word-break:break-all;line-height:1.45}
+.copy-btn{background:linear-gradient(135deg,#7a4d0a,#c9922a);color:#0a0600;border:none;border-radius:12px;padding:0 16px;font-family:var(--fh);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;box-shadow:0 4px 14px rgba(201,146,42,.3);transition:all .18s}
+.copy-btn:active{transform:scale(.96)}
+.qa-label{font-family:var(--fh);font-size:9px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);margin:6px 0 10px;animation:rise .4s ease .2s both}
+.qa-card{padding:15px 16px;margin-bottom:9px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:all .2s;animation:rise .4s ease both;background:linear-gradient(145deg,rgba(13,16,24,.95),rgba(8,9,13,.98));border:1px solid var(--rim);border-radius:var(--r);position:relative;overflow:hidden}
+.qa-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.03),transparent);pointer-events:none}
+.qa-card:active{transform:scale(.98);border-color:rgba(201,146,42,.2);background:rgba(201,146,42,.04)}
+.qa-ico{width:44px;height:44px;border-radius:13px;background:rgba(201,146,42,.08);border:1px solid rgba(201,146,42,.15);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.qa-body{flex:1}
+.qa-ttl{font-family:var(--fh);font-size:14px;font-weight:600;margin-bottom:2px}
+.qa-dsc{font-size:11px;color:var(--ink2);font-family:var(--fh)}
+.qa-arr{font-size:16px;color:var(--gold);opacity:.4}
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:40;background:rgba(2,4,8,.92);backdrop-filter:blur(24px);border-top:1px solid var(--rim);display:flex;padding:10px 0 20px}
+.bnav::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.3}
+.bnav-it{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px 0;position:relative}
+.bnav-ico{font-size:20px;line-height:1}
+.bnav-lbl{font-family:var(--fh);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);transition:color .2s}
+.bnav-it.on .bnav-lbl{color:var(--gold2)}
+.bnav-pip{position:absolute;bottom:-2px;width:4px;height:4px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold)}
+.dep-amount-wrap{display:flex;align-items:center;gap:0;margin-bottom:14px;background:rgba(0,0,0,.3);border-radius:14px;border:1px solid var(--rim2);padding:4px 4px 4px 16px}
+.dep-currency-sym{font-family:var(--fh);font-size:28px;font-weight:800;color:var(--gold2);flex-shrink:0;margin-right:4px}
+.dep-input{flex:1;background:transparent!important;border:none!important;border-radius:0!important;padding:14px 8px!important;font-family:var(--fh)!important;font-size:30px!important;font-weight:800!important;color:var(--ink)!important;box-shadow:none!important}
+.dep-input:focus{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+.dep-presets{display:flex;flex-wrap:wrap;gap:8px}
+.dep-preset{background:var(--glass2);border:1px solid var(--rim2);border-radius:10px;padding:8px 14px;font-family:var(--fh);font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;transition:all .18s}
+.dep-preset:active,.dep-preset.sel{background:rgba(201,146,42,.12);border-color:rgba(201,146,42,.3);color:var(--gold2)}
+.pay-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.pay-method{background:var(--glass2);border:1px solid var(--rim2);border-radius:14px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s}
+.pay-method.active{background:rgba(201,146,42,.1);border-color:rgba(201,146,42,.35)}
+.pay-method:active{transform:scale(.96)}
+.pm-ico{font-size:22px;margin-bottom:5px}
+.pm-name{font-family:var(--fh);font-size:11px;font-weight:700;margin-bottom:2px}
+.pm-sub{font-size:9px;color:var(--ink2);font-family:var(--fh)}
+.menu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;opacity:0;pointer-events:none;transition:opacity .28s;backdrop-filter:blur(8px)}
+.menu-overlay.open{opacity:1;pointer-events:all}
+.menu-drawer{position:fixed;top:0;right:0;bottom:0;width:80%;max-width:340px;z-index:201;transform:translateX(105%);transition:transform .38s cubic-bezier(.16,1,.3,1);display:flex;flex-direction:column;background:linear-gradient(160deg,#100c04,#080508,#030208);border-left:1px solid rgba(201,146,42,.15);box-shadow:-30px 0 80px rgba(0,0,0,.7);overflow-y:auto}
+.menu-drawer.open{transform:translateX(0)}
+.menu-drawer::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.4}
+.menu-hd{display:flex;align-items:center;justify-content:space-between;padding:22px 20px 16px;border-bottom:1px solid var(--rim)}
+.menu-title{font-family:var(--fh);font-size:20px;font-weight:700}
+.menu-x{width:36px;height:36px;border-radius:10px;background:var(--glass2);border:1px solid var(--rim);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:var(--ink)}
+.menu-items{padding:14px 14px;flex:1;display:flex;flex-direction:column;gap:6px}
+.mitem{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:14px;cursor:pointer;background:rgba(255,255,255,.02);border:1px solid var(--rim2);transition:all .18s;position:relative;overflow:hidden}
+.mitem::before{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(135deg,rgba(201,146,42,.15),transparent);transition:width .2s;border-radius:14px}
+.mitem:active::before{width:100%}
+.mitem:active{border-color:rgba(201,146,42,.2)}
+.mitem.active{background:rgba(201,146,42,.08);border-color:rgba(201,146,42,.25)}
+.mitem.active::before{width:100%}
+.mitem-ico{width:40px;height:40px;border-radius:11px;background:var(--glass2);border:1px solid var(--rim);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;position:relative;z-index:1}
+.mitem.active .mitem-ico{background:rgba(201,146,42,.12);border-color:rgba(201,146,42,.25)}
+.mitem-body{flex:1;position:relative;z-index:1}
+.mitem-ttl{font-family:var(--fh);font-size:14px;font-weight:600}
+.mitem-sub{font-size:10px;color:var(--ink2);margin-top:2px;font-family:var(--fh)}
+.mitem-arr{font-size:14px;color:var(--gold);opacity:.4;position:relative;z-index:1}
+.menu-footer{padding:14px 14px 28px;border-top:1px solid var(--rim)}
+.menu-user{background:linear-gradient(135deg,rgba(201,146,42,.08),rgba(201,146,42,.04));border:1px solid rgba(201,146,42,.18);border-radius:14px;padding:15px 16px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}
+.menu-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#7a4d0a,#c9922a);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 0 14px rgba(201,146,42,.35)}
+.menu-uname{font-family:var(--fh);font-size:14px;font-weight:700;position:relative;z-index:1}
+.menu-ubal{font-family:var(--fh);font-size:11px;color:var(--gold2);margin-top:2px;position:relative;z-index:1}
+.curr-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;opacity:0;pointer-events:none;transition:opacity .28s;backdrop-filter:blur(10px)}
+.curr-overlay.open{opacity:1;pointer-events:all}
+.curr-sheet{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:linear-gradient(160deg,#100c04,#080508);border-radius:24px 24px 0 0;border-top:1px solid rgba(201,146,42,.2);z-index:301;transform:translateY(100%);transition:transform .38s cubic-bezier(.16,1,.3,1);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 -20px 60px rgba(0,0,0,.6)}
+.curr-sheet.open{transform:translateY(0)}
+.curr-handle{width:36px;height:3px;background:rgba(201,146,42,.3);border-radius:3px;margin:12px auto 0;flex-shrink:0}
+.curr-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--rim)}
+.curr-htit{font-family:var(--fh);font-size:16px;font-weight:700}
+.curr-hx{width:32px;height:32px;border-radius:9px;background:var(--glass2);border:1px solid var(--rim);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer}
+.curr-sw{padding:10px 14px;flex-shrink:0;position:relative}
+.curr-sico{position:absolute;left:26px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none}
+input.curr-sinp{width:100%;background:rgba(255,255,255,.03);border:1px solid var(--rim);border-radius:11px;padding:11px 14px 11px 38px;font-size:13px;font-family:var(--fb);color:var(--ink);outline:none}
+input.curr-sinp:focus{border-color:rgba(201,146,42,.4)}
+input.curr-sinp::placeholder{color:var(--ink3)}
+.curr-list{overflow-y:auto;padding:0 10px 28px;flex:1}
+.cgrp-lbl{font-family:var(--fh);font-size:9px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);padding:12px 6px 6px}
+.citem{display:flex;align-items:center;gap:12px;padding:12px 13px;border-radius:12px;cursor:pointer;transition:all .15s;margin-bottom:3px;border:1px solid transparent}
+.citem:active{background:rgba(201,146,42,.06)}
+.citem.sel{background:rgba(201,146,42,.1);border-color:rgba(201,146,42,.25)}
+.cflag{font-size:22px;width:32px;text-align:center;flex-shrink:0}
+.cbody{flex:1}
+.cname{font-family:var(--fh);font-size:13px;font-weight:600}
+.ccode{font-family:var(--fb);font-size:10px;color:var(--ink2);margin-top:1px}
+.crate{font-family:var(--fb);font-size:11px;color:var(--gold)}
+.cchk{font-size:16px;color:var(--gold2);opacity:0;transition:opacity .15s}
+.citem.sel .cchk{opacity:1}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--glass2);border:1px solid var(--rim);color:var(--ink);padding:11px 22px;border-radius:30px;font-family:var(--fh);font-size:12px;font-weight:600;letter-spacing:.3px;opacity:0;transition:all .28s;z-index:9999;pointer-events:none;white-space:nowrap;box-shadow:0 8px 28px rgba(0,0,0,.5)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:rgba(0,229,160,.1);border-color:rgba(0,229,160,.3);color:var(--success)}
+.toast.err{background:rgba(255,77,109,.1);border-color:rgba(255,77,109,.3);color:var(--danger)}
+.page-inner{padding:16px;padding-bottom:30px;position:relative;z-index:1}
+.sec-head{font-family:var(--fh);font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);margin:6px 0 12px}
+.checkin-card{background:linear-gradient(135deg,#1a0e00,#2a1800,#1f1200);border:1px solid rgba(201,146,42,0.3);border-radius:20px;padding:20px 18px;margin-bottom:14px;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(201,146,42,0.12);animation:rise .4s ease both}
+.checkin-card::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(201,146,42,0.15),transparent 70%)}
+.checkin-title{font-family:var(--fh);font-size:17px;font-weight:800;margin-bottom:4px}
+.checkin-sub{font-size:12px;color:var(--ink2);line-height:1.5;margin-bottom:14px}
+.streak-row{display:flex;gap:5px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px}
+.streak-day{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,0.04);border:1px solid var(--rim);border-radius:10px;padding:8px 6px;min-width:40px;cursor:default}
+.streak-day.done{background:rgba(201,146,42,0.12);border-color:rgba(201,146,42,0.3)}
+.streak-day.today{background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.3);animation:pulse 1.5s ease infinite}
+.sd-ico{font-size:16px}
+.sd-lbl{font-family:var(--fh);font-size:9px;color:var(--ink3);font-weight:600}
+.sd-amt{font-family:var(--fh);font-size:9px;color:var(--gold2);font-weight:700}
+.checkin-btn{width:100%;background:linear-gradient(135deg,#3a2200,#6b3f00,#8a5200);border:1px solid rgba(201,146,42,0.4);border-radius:13px;padding:13px;font-family:var(--fh);font-size:13px;font-weight:700;color:var(--gold3);cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(201,146,42,0.2)}
+.checkin-btn:disabled{opacity:.4;cursor:not-allowed}
+.checkin-btn:not(:disabled):active{transform:scale(.97)}
+.task-tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding:2px 0;scrollbar-width:none}
+.task-tabs::-webkit-scrollbar{display:none}
+.ttab{flex-shrink:0;background:var(--glass2);border:1px solid var(--rim);border-radius:22px;padding:8px 16px;font-family:var(--fh);font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;transition:all .18s}
+.ttab.on{background:rgba(201,146,42,0.12);border-color:rgba(201,146,42,0.35);color:var(--gold2)}
+.task-card{background:var(--glass2);border:1px solid var(--rim);border-radius:16px;padding:15px 15px;margin-bottom:10px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:all .18s;animation:rise .35s ease both}
+.task-card:active{transform:scale(.98)}
+.task-card.done{opacity:.55;pointer-events:none}
+.task-ico-wrap{width:50px;height:50px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid var(--rim2)}
+.task-ico-wrap.video{background:rgba(0,180,255,0.08);border-color:rgba(0,180,255,0.2)}
+.task-ico-wrap.survey{background:rgba(201,146,42,0.08);border-color:rgba(201,146,42,0.2)}
+.task-ico-wrap.done{background:rgba(0,229,160,0.08);border-color:rgba(0,229,160,0.2)}
+.task-done-badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:var(--success);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#000}
+.task-body{flex:1}
+.task-title{font-family:var(--fh);font-size:13px;font-weight:700;margin-bottom:3px;line-height:1.3}
+.task-desc{font-size:11px;color:var(--ink2);margin-bottom:5px}
+.task-reward{font-family:var(--fh);font-size:13px;font-weight:800;color:var(--gold2)}
+.task-action{background:var(--glass2);border:1px solid var(--rim2);border-radius:10px;padding:8px 14px;font-family:var(--fh);font-size:12px;font-weight:600;cursor:pointer;color:var(--ink);transition:all .2s;white-space:nowrap}
+.task-action.done-btn{background:rgba(0,229,160,0.08);border-color:rgba(0,229,160,0.2);color:var(--success);cursor:default}
+.task-action:not(.done-btn):active{background:rgba(201,146,42,0.15);border-color:rgba(201,146,42,0.3);color:var(--gold2)}
+.video-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;max-width:480px;margin:0 auto}
+.video-overlay.open{opacity:1;pointer-events:all}
+.video-screen{background:linear-gradient(145deg,#080c14,#0c1420);border:1px solid rgba(0,180,255,0.2);border-radius:18px;height:200px;margin-bottom:18px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.video-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,rgba(0,180,255,0.08),transparent 60%)}
+.video-play-ring{width:70px;height:70px;border-radius:50%;background:rgba(0,180,255,0.15);border:2px solid rgba(0,180,255,0.4);display:flex;align-items:center;justify-content:center;font-size:28px;animation:pulse 2s ease infinite}
+.video-timer{font-family:var(--fh);font-size:42px;font-weight:900;color:var(--gold2);text-align:center;margin-bottom:8px;letter-spacing:-2px}
+.video-label{font-size:12px;color:var(--ink2);text-align:center;margin-bottom:14px;line-height:1.5}
+.video-close{width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--rim);border-radius:12px;padding:12px;font-family:var(--fh);font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer}
+.survey-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:500;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;max-width:480px;margin:0 auto}
+.survey-overlay.open{opacity:1;pointer-events:all}
+.survey-inner{background:linear-gradient(160deg,#0d1018,#080b12);border-radius:24px 24px 0 0;border-top:1px solid var(--rim2);padding:24px 20px 40px;width:100%;transform:translateY(100%);transition:transform .35s cubic-bezier(.16,1,.3,1)}
+.survey-overlay.open .survey-inner{transform:translateY(0)}
+.survey-prog{height:4px;background:var(--rim2);border-radius:4px;margin-bottom:16px;overflow:hidden}
+.survey-prog-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold3),var(--gold2));transition:width .4s ease}
+.survey-q-num{font-family:var(--fh);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+.survey-question{font-family:var(--fh);font-size:18px;font-weight:700;line-height:1.35;margin-bottom:20px}
+.survey-options{display:flex;flex-direction:column;gap:9px;margin-bottom:20px}
+.survey-opt{background:rgba(255,255,255,0.04);border:1.5px solid var(--rim);border-radius:13px;padding:13px 16px;font-family:var(--fh);font-size:14px;font-weight:600;cursor:pointer;transition:all .16s}
+.survey-opt:active{transform:scale(.98)}
+.survey-opt.selected{background:rgba(201,146,42,0.12);border-color:rgba(201,146,42,0.4);color:var(--gold2)}
+.survey-next{width:100%;background:linear-gradient(135deg,#3a2200,#6b3f00);border:1px solid rgba(201,146,42,0.35);border-radius:14px;padding:15px;font-family:var(--fh);font-size:14px;font-weight:700;color:var(--gold3);cursor:pointer;transition:all .18s;box-shadow:0 4px 18px rgba(201,146,42,0.18)}
+.survey-next:active{transform:scale(.97)}
+.ref-tier-card{background:var(--glass2);border:1px solid var(--rim);border-radius:18px;padding:18px 16px;margin-bottom:12px;position:relative;overflow:hidden;animation:rise .4s ease both}
+.current-tier-crown{position:absolute;top:12px;right:14px;font-size:22px;opacity:.3}
+.tier-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--fh);font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:8px;margin-bottom:8px}
+.tier-badge.bronze{background:rgba(180,100,40,0.15);color:#cd7f32;border:1px solid rgba(180,100,40,0.25)}
+.tier-badge.silver{background:rgba(160,160,160,0.1);color:#c0c0c0;border:1px solid rgba(160,160,160,0.2)}
+.tier-badge.gold{background:rgba(201,146,42,0.15);color:var(--gold2);border:1px solid rgba(201,146,42,0.3)}
+.tier-badge.diamond{background:rgba(0,229,200,0.1);color:#00e5c8;border:1px solid rgba(0,229,200,0.25)}
+.tier-title{font-family:var(--fh);font-size:16px;font-weight:800;margin-bottom:5px}
+.tier-desc{font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:10px}
+.tier-earn{font-family:var(--fh);font-size:28px;font-weight:900;color:var(--gold2);margin-bottom:12px}
+.tier-earn span{font-size:13px;color:var(--ink2);font-weight:500}
+.tier-prog-wrap{}
+.tier-prog-label{display:flex;justify-content:space-between;font-size:10px;color:var(--ink3);font-family:var(--fh);margin-bottom:5px}
+.tier-prog-bar{height:5px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden}
+.tier-prog-fill{height:100%;border-radius:4px;transition:width 1s ease}
+.tier-prog-fill.bronze{background:linear-gradient(90deg,#8B4513,#cd7f32)}
+.tier-prog-fill.silver{background:linear-gradient(90deg,#808080,#c0c0c0)}
+.tier-prog-fill.gold{background:linear-gradient(90deg,var(--gold3),var(--gold2))}
+.tier-prog-fill.diamond{background:linear-gradient(90deg,#00b4d8,#00e5c8)}
+.ref-stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.ref-stat-card{background:var(--glass2);border:1px solid var(--rim);border-radius:14px;padding:14px 12px;text-align:center;animation:rise .4s ease both}
+.rsc-val{font-family:var(--fh);font-size:22px;font-weight:900;margin-bottom:3px;color:var(--gold2)}
+.rsc-lbl{font-size:10px;color:var(--ink3);font-family:var(--fh);letter-spacing:.5px}
+.ref-item{display:flex;align-items:center;gap:12px;background:var(--glass2);border:1px solid var(--rim);border-radius:14px;padding:13px 14px;margin-bottom:8px;animation:rise .35s ease both}
+.ref-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--glass3),var(--rim));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ref-body{flex:1}
+.ref-name{font-family:var(--fh);font-size:13px;font-weight:700;margin-bottom:2px}
+.ref-date{font-size:11px;color:var(--ink2)}
+.ref-amt{font-family:var(--fh);font-size:13px;font-weight:800;color:var(--success)}
+.wd-avail{background:linear-gradient(135deg,#061a10,#0b2a18,#071e10);border:1px solid rgba(0,229,160,0.2);border-radius:18px;padding:20px 18px;margin-bottom:14px;text-align:center;animation:rise .4s ease both;box-shadow:0 6px 24px rgba(0,229,160,0.08)}
+.wd-avail-lbl{font-family:var(--fh);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(0,229,160,0.6);margin-bottom:6px}
+.wd-avail-amt{font-family:var(--fh);font-size:40px;font-weight:900;color:var(--success);letter-spacing:-1px}
+.wd-avail-sub{font-size:11px;color:var(--ink3);margin-top:4px}
+.wd-method{display:flex;align-items:center;gap:12px;background:var(--glass2);border:1.5px solid var(--rim);border-radius:14px;padding:14px 15px;margin-bottom:9px;cursor:pointer;transition:all .18s;animation:rise .35s ease both}
+.wd-method.sel{background:rgba(0,229,160,0.06);border-color:rgba(0,229,160,0.3)}
+.wd-method:active{transform:scale(.98)}
+.wd-method-ico{font-size:24px;flex-shrink:0}
+.wd-method-body{flex:1}
+.wd-method-name{font-family:var(--fh);font-size:14px;font-weight:700;margin-bottom:2px}
+.wd-method-sub{font-size:11px;color:var(--ink2)}
+.wd-method-tick{font-size:18px;color:var(--success);opacity:0;transition:opacity .2s}
+.wd-method.sel .wd-method-tick{opacity:1}
+.wd-min-warn{background:rgba(255,180,0,0.07);border:1px solid rgba(255,180,0,0.2);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#ffb400;line-height:1.6;font-family:var(--fh)}
+.lb-header-card{background:linear-gradient(135deg,#100a00,#1e1200,#150e00);border:1px solid rgba(201,146,42,0.25);border-radius:20px;padding:20px 18px;margin-bottom:14px;text-align:center;animation:rise .4s ease both;position:relative;overflow:hidden}
+.lb-header-card::before{content:'';position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(201,146,42,0.1),transparent 70%)}
+.lb-podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-bottom:16px}
+.lb-pod{display:flex;flex-direction:column;align-items:center;gap:4px}
+.lb-pod-av{font-size:26px}
+.lb-pod-name{font-family:var(--fh);font-size:10px;font-weight:700;color:var(--ink2)}
+.lb-pod-earn{font-family:var(--fh);font-size:11px;font-weight:800;color:var(--gold2)}
+.lb-pod-bar{border-radius:8px 8px 0 0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-size:18px}
+.lb-pod-bar.first{width:60px;height:80px;background:linear-gradient(to top,rgba(201,146,42,0.3),rgba(201,146,42,0.08));border:1px solid rgba(201,146,42,0.3)}
+.lb-pod-bar.second{width:50px;height:60px;background:linear-gradient(to top,rgba(160,160,160,0.2),rgba(160,160,160,0.05));border:1px solid rgba(160,160,160,0.2)}
+.lb-pod-bar.third{width:50px;height:44px;background:linear-gradient(to top,rgba(180,100,40,0.2),rgba(180,100,40,0.05));border:1px solid rgba(180,100,40,0.2)}
+.lb-tabs{display:flex;gap:6px;margin-bottom:12px}
+.lb-tab{flex:1;background:var(--glass2);border:1px solid var(--rim);border-radius:22px;padding:9px 14px;font-family:var(--fh);font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer;text-align:center;transition:all .18s}
+.lb-tab.on{background:rgba(201,146,42,0.12);border-color:rgba(201,146,42,0.35);color:var(--gold2)}
+.lb-prize-banner{background:rgba(201,146,42,0.07);border:1px solid rgba(201,146,42,0.2);border-radius:13px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;animation:rise .4s ease .08s both}
+.lb-prize-ico{font-size:24px;flex-shrink:0}
+.lb-prize-txt{font-family:var(--fh);font-size:12px;line-height:1.55;color:var(--ink2)}
+.lb-prize-txt strong{color:var(--gold2)}
+.lb-row{display:flex;align-items:center;gap:11px;background:var(--glass2);border:1px solid var(--rim);border-radius:14px;padding:13px 14px;margin-bottom:8px;animation:rise .35s ease both}
+.lb-you-row{background:rgba(201,146,42,0.07);border-color:rgba(201,146,42,0.3)}
+.lb-rank{font-family:var(--fh);font-size:16px;font-weight:800;min-width:30px}
+.lb-av{font-size:24px}
+.lb-body{flex:1}
+.lb-name{font-family:var(--fh);font-size:13px;font-weight:700;margin-bottom:2px}
+.lb-refs{font-size:11px;color:var(--ink2)}
+.lb-earn{font-family:var(--fh);font-size:14px;font-weight:800;color:var(--gold2)}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<!-- LOGIN -->
+<div class="page active" id="loginPage">
+<div class="topbar">
+<div class="logobox"><div class="logo-gem"><div class="gem-ico">🦁</div></div><div class="logo-wordmark">JI_BRAVE <em>USD</em></div></div>
+<div class="curr-pill curr-badge" onclick="openCurr()">🇺🇸 USD <span class="pill-arrow">▾</span></div>
+</div>
+<div class="login-scroll">
+<div class="brand-hero"><div class="brand-sigil"><span class="sico">🦁</span></div><h1>Welcome Back</h1><p>Sign in to your account.<br>Your earnings are waiting.</p></div>
+<div class="gcard fcard"><div style="padding:22px 18px 4px">
+<div class="fg"><label>Username or Email</label><div class="iw"><span class="iico">👤</span><input type="text" id="l-user" placeholder="username or email"></div></div>
+<div class="fg"><label>Password</label><div class="iw"><span class="iico">🔒</span><input type="password" id="l-pass" placeholder="Enter password"><button class="eye-btn" onclick="toggleEye('l-pass',this)" type="button">👁</button></div><div style="text-align:right;margin-top:6px"><a href="#" style="font-family:var(--fh);font-size:10px;color:var(--gold2);text-decoration:none;letter-spacing:1px;text-transform:uppercase">Forgot?</a></div></div>
+<button class="btn-gold" onclick="doLogin()" style="margin-bottom:18px">🚀 Sign In & Earn</button>
+</div></div>
+<div class="div-row"><div class="div-line"></div><div class="div-txt">or continue with</div><div class="div-line"></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
+<button class="btn-glass" onclick="showToast('Google coming soon','err')">🌐 Google</button>
+<button class="btn-glass" onclick="showToast('Facebook coming soon','err')">👤 Facebook</button>
+</div>
+<div class="link-line">No account? <a onclick="goTo('signupPage')">Create one FREE →</a></div>
+<div class="benefit-strip">
+<div class="bchip"><div class="bico">💵</div><div class="btit">$10 Bonus</div><div class="bdsc">On sign up</div></div>
+<div class="bchip"><div class="bico">👥</div><div class="btit">$5/Invite</div><div class="bdsc">Per referral</div></div>
+<div class="bchip"><div class="bico">💳</div><div class="btit">Fast Pay</div><div class="bdsc">Wise & PayPal</div></div>
+<div class="bchip"><div class="bico">🔐</div><div class="btit">Secure</div><div class="bdsc">256-bit SSL</div></div>
+</div>
+</div>
+</div>
+
+<!-- SIGNUP -->
+<div class="page" id="signupPage">
+<div class="topbar">
+<div class="back-btn" onclick="goBack('loginPage')">←</div>
+<div class="logo-wordmark" style="font-family:var(--fh);font-size:15px;font-weight:700">Create Account</div>
+<div class="logo-gem" style="width:32px;height:32px;font-size:14px"><div class="gem-ico">🦁</div></div>
+</div>
+<div class="signup-scroll">
+<div class="welcome-badge"><div class="wbico">🎁</div><div><div class="wbtit">$10.00 Sign-Up Bonus!</div><div class="wbdsc">Register free and get $10.00 instantly credited to your wallet.</div></div></div>
+<div class="steps">
+<div class="stp done"><div class="stp-n">✓</div><div class="stp-l">Account</div></div>
+<div class="stp active"><div class="stp-n">2</div><div class="stp-l">Details</div></div>
+<div class="stp"><div class="stp-n">3</div><div class="stp-l">Verify</div></div>
+<div class="stp"><div class="stp-n">4</div><div class="stp-l">Earn</div></div>
+</div>
+<div class="gcard" style="padding:20px 16px;margin-bottom:14px;animation:rise .5s ease .15s both">
+<div class="row2">
+<div class="fg"><label>First Name</label><div class="iw"><span class="iico">🙂</span><input type="text" id="s-fn" placeholder="Joshua"></div></div>
+<div class="fg"><label>Last Name</label><div class="iw"><span class="iico">🙂</span><input type="text" id="s-ln" placeholder="Iheanacho"></div></div>
+</div>
+<div class="fg"><label>Username</label><div class="iw"><span class="iico">🆔</span><input type="text" id="s-username" placeholder="e.g. joshua_brave"></div></div>
+<div class="fg"><label>Email</label><div class="iw"><span class="iico">📧</span><input type="email" id="s-email" placeholder="you@example.com"></div></div>
+<div class="fg"><label>Country</label><div class="iw"><span class="iico">🌍</span><select id="s-country"><option value="">Select country</option><option>🇳🇬 Nigeria</option><option>🇺🇸 United States</option><option>🇬🇧 United Kingdom</option><option>🇬🇭 Ghana</option><option>🇰🇪 Kenya</option><option>🇿🇦 South Africa</option><option>🇨🇦 Canada</option><option>🇦🇺 Australia</option><option>🌐 Other</option></select></div></div>
+<div class="fg"><label>Password</label><div class="iw"><span class="iico">🔒</span><input type="password" id="s-pass" placeholder="Min 8 characters" oninput="chkStr(this.value)"><button class="eye-btn" onclick="toggleEye('s-pass',this)" type="button">👁</button></div><div class="str-bar"><div class="str-seg" id="ss1"></div><div class="str-seg" id="ss2"></div><div class="str-seg" id="ss3"></div><div class="str-seg" id="ss4"></div></div><div class="str-lbl" id="strLbl">Enter a password</div></div>
+<div class="fg"><label>Confirm Password</label><div class="iw"><span class="iico">🔒</span><input type="password" id="s-pass2" placeholder="Repeat password"><button class="eye-btn" onclick="toggleEye('s-pass2',this)" type="button">👁</button></div></div>
+<div class="fg"><label>Referral Code (Optional)</label><div class="iw"><span class="iico">🔗</span><input type="text" id="s-ref" placeholder="Enter referral code"></div></div>
+<div class="check-row"><input type="checkbox" id="s-terms"><label for="s-terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. I am 18+.</label></div>
+<button class="btn-gold" style="margin-top:16px" onclick="doSignup()">🎉 Create Free Account</button>
+</div>
+<div class="link-line">Have an account? <a onclick="goBack('loginPage')">Sign in →</a></div>
+</div>
+</div>
+
+<!-- HOME -->
+<div class="page" id="homePage">
+<div class="topbar">
+<div class="logobox"><div class="logo-gem"><div class="gem-ico">🦁</div></div><div class="logo-wordmark">JI_BRAVE <em>USD</em></div></div>
+<div style="display:flex;align-items:center;gap:8px">
+<div class="curr-pill curr-badge" onclick="openCurr()">🇺🇸 USD <span class="pill-arrow">▾</span></div>
+<div class="ham" onclick="openMenu()"><span></span><span></span><span></span></div>
+</div>
+</div>
+<div class="home-scroll">
+<div class="balance-hero"><div class="bal-aurora"></div><div class="bal-grid"></div><div class="bal-content">
+<div class="bal-top"><div class="bal-badge">JI_BRAVE USD</div><div class="bal-live"><div class="bal-live-dot"></div>Live</div></div>
+<div class="bal-label">Total Balance</div><div class="bal-amount" id="balAmount">$10.00</div>
+<div class="bal-currency" id="balCurr">USD · US Dollar</div>
+<div class="bal-name" id="balName">Joshua Iheanacho</div>
+<div class="bal-rule"></div>
+<div class="bal-stats">
+<div class="bal-stat"><div class="bstat-val" id="earnVal">$0.00</div><div class="bstat-lbl">Earned</div></div>
+<div class="bal-stat"><div class="bstat-val">0</div><div class="bstat-lbl">Referrals</div></div>
+<div class="bal-stat"><div class="bstat-val">$5.00</div><div class="bstat-lbl">Per Invite</div></div>
+</div>
+</div></div>
+<div class="live-card"><div class="live-pulse"></div><div style="flex:1"><div class="notif-user" id="nUser">@Finn</div><div class="notif-msg" id="nMsg">Finn just got paid $509.52 bonus via Wise</div><div class="notif-time" id="nTime">9 seconds ago</div></div><div style="font-size:18px;color:var(--aurora1);opacity:.7">✔</div></div>
+<div class="ticker-bar"><div class="tick-live"><div class="tick-dot"></div>Live</div><div class="tick-text">🔴 @Grace earned $150 · @Mike withdrew $200 · @Sarah got $75 · @David paid $340 · @Linda received $250 · @James got $125 &nbsp;&nbsp;&nbsp;&nbsp; 🔴 @Grace earned $150 · @Mike withdrew $200 · @Sarah got $75</div></div>
+<div class="earn-row">
+<div class="gcard earn-chip"><div class="earn-chip-lbl">Referral Earnings</div><div class="earn-chip-val gold" id="earnDisp">$0.00</div></div>
+<div class="gcard earn-chip"><div class="earn-chip-lbl">Total Members</div><div class="earn-chip-val">12.4K</div></div>
+</div>
+<div class="gcard share-section"><div class="share-heading">Share & Earn</div>
+<div class="share-grid">
+<div class="shr-btn" onclick="shr('share')"><div class="shr-ico">🔗</div><div class="shr-lbl">Share</div></div>
+<div class="shr-btn" onclick="shr('whatsapp')"><div class="shr-ico">💬</div><div class="shr-lbl">WhatsApp</div></div>
+<div class="shr-btn" onclick="shr('telegram')"><div class="shr-ico">✈️</div><div class="shr-lbl">Telegram</div></div>
+<div class="shr-btn" onclick="shr('facebook')"><div class="shr-ico">👤</div><div class="shr-lbl">Facebook</div></div>
+<div class="shr-btn" onclick="shr('messenger')"><div class="shr-ico">💭</div><div class="shr-lbl">Messenger</div></div>
+<div class="shr-btn" onclick="shr('email')"><div class="shr-ico">✉️</div><div class="shr-lbl">Email</div></div>
+<div class="shr-btn" onclick="shr('status')"><div class="shr-ico">↗️</div><div class="shr-lbl">Status</div></div>
+<div class="shr-btn" onclick="shr('sms')"><div class="shr-ico">📱</div><div class="shr-lbl">SMS</div></div>
+</div></div>
+<div class="gcard info-sec"><div class="info-tag">How It Works</div>
+<p><strong>1.</strong> Share your referral link with friends. Earn <strong>$5.00</strong> for every successful registration.</p>
+<p><strong>2.</strong> When your balance reaches <strong>$100.00</strong>, withdraw your earnings instantly.</p>
+<div class="gold-line" style="margin:14px 0"></div>
+<div class="ref-lbl">Your Referral Link — Earn $5.00 Per Registration</div>
+<div class="ref-row"><div class="ref-box" id="refLink">https://ji-brave.com/r/JoshuaIheanacho</div><button class="copy-btn" onclick="copyRef()">🔗 Copy</button></div>
+</div>
+<div class="qa-label">Quick Access</div>
+<div class="qa-card" onclick="goTo('taskPage')"><div class="qa-ico">📋</div><div class="qa-body"><div class="qa-ttl">Task Center</div><div class="qa-dsc">Complete tasks · earn fast rewards</div></div><div class="qa-arr">›</div></div>
+<div class="qa-card" onclick="goTo('referralsPage')"><div class="qa-ico">🔗</div><div class="qa-body"><div class="qa-ttl">Referral Boost</div><div class="qa-dsc">Share link · grow earnings</div></div><div class="qa-arr">›</div></div>
+<div class="qa-card" onclick="goTo('myReferralsPage')"><div class="qa-ico">👥</div><div class="qa-body"><div class="qa-ttl">My Referrals</div><div class="qa-dsc">View your invited network</div></div><div class="qa-arr">›</div></div>
+<div class="qa-card" onclick="goTo('withdrawPage')"><div class="qa-ico">💳</div><div class="qa-body"><div class="qa-ttl">Withdraw Funds</div><div class="qa-dsc">Cash out to your account</div></div><div class="qa-arr">›</div></div>
+<div class="qa-card" onclick="goTo('depositPage')"><div class="qa-ico" style="background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.2)">💰</div><div class="qa-body"><div class="qa-ttl">Deposit Funds</div><div class="qa-dsc">Top up your wallet balance</div></div><div class="qa-arr">›</div></div>
+</div>
+<div class="bnav">
+<div class="bnav-it on" onclick="navClick(this)"><div class="bnav-ico">🏠</div><div class="bnav-lbl">Home</div><div class="bnav-pip"></div></div>
+<div class="bnav-it" onclick="navClick(this);shr('share')"><div class="bnav-ico">🔗</div><div class="bnav-lbl">Share</div></div>
+<div class="bnav-it" onclick="navClick(this);goTo('taskPage')"><div class="bnav-ico">📋</div><div class="bnav-lbl">Task</div></div>
+<div class="bnav-it" onclick="navClick(this);goTo('withdrawPage')"><div class="bnav-ico">💳</div><div class="bnav-lbl">Withdraw</div></div>
+<div class="bnav-it" onclick="navClick(this);goTo('depositPage')"><div class="bnav-ico">💰</div><div class="bnav-lbl">Deposit</div></div>
+</div>
+</div>
+
+<!-- TASK CENTER -->
+<div class="page" id="taskPage">
+<div class="topbar"><div class="back-btn" onclick="goBack('homePage')">←</div><div class="logo-wordmark" style="font-family:var(--fh);font-size:15px;font-weight:700">Task Center</div><div style="font-family:var(--fh);font-size:13px;font-weight:700;color:var(--gold2)" id="taskEarnTotal">+$0.00</div></div>
+<div class="page-inner" style="overflow-y:auto;flex:1">
+<div class="checkin-card">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="checkin-title">🔥 Daily Check-in</div><div style="font-family:var(--fh);font-size:11px;color:var(--gold2)" id="streakCount">0 day streak</div></div>
+<div class="checkin-sub">Check in every day to earn bonus rewards.</div>
+<div class="streak-row" id="streakRow"></div>
+<button class="checkin-btn" id="checkinBtn" onclick="doCheckin()">✅ Claim Today's Bonus</button>
+</div>
+<div class="task-tabs">
+<div class="ttab on" onclick="switchTab(this,'all')">All Tasks</div>
+<div class="ttab" onclick="switchTab(this,'video')">📹 Videos</div>
+<div class="ttab" onclick="switchTab(this,'survey')">📋 Surveys</div>
+</div>
+<div id="taskList"></div>
+</div>
+</div>
+
+<!-- VIDEO OVERLAY -->
+<div class="video-overlay" id="videoOverlay">
+<div style="padding:20px;width:100%">
+<div style="font-family:var(--fh);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;text-align:center">WATCH TO EARN</div>
+<div class="video-screen"><div><div class="video-play-ring">▶</div><div style="margin-top:12px;font-family:var(--fh);font-size:12px;color:var(--ink2);text-align:center" id="videoTitle">Loading...</div></div></div>
+<div class="video-timer" id="videoTimer">0:30</div>
+<div class="video-label" id="videoLabel">Watch the full video to earn your reward</div>
+<div style="height:5px;background:var(--rim2);border-radius:3px;margin-bottom:20px;overflow:hidden"><div id="videoProgBar" style="height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold2));width:0%;transition:width .5s linear;border-radius:3px;"></div></div>
+<button class="video-close" onclick="closeVideo(false)">✕ Close</button>
+</div>
+</div>
+
+<!-- SURVEY OVERLAY -->
+<div class="survey-overlay" id="surveyOverlay">
+<div class="survey-inner">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div style="font-family:var(--fh);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3)">SURVEY · EARN $<span id="surveyReward">1.50</span></div><div onclick="closeSurvey()" style="cursor:pointer;font-size:18px;color:var(--ink2)">✕</div></div>
+<div class="survey-prog"><div class="survey-prog-fill" id="surveyProgFill" style="width:14%"></div></div>
+<div class="survey-q-num" id="surveyQNum">Question 1 of 7</div>
+<div class="survey-question" id="surveyQ">Loading...</div>
+<div class="survey-options" id="surveyOpts"></div>
+<button class="survey-next" onclick="nextSurveyQ()">Next →</button>
+</div>
+</div>
+
+<!-- REFERRALS -->
+<div class="page" id="referralsPage">
+<div class="topbar"><div class="back-btn" onclick="goBack('homePage')">←</div><div class="logo-wordmark" style="font-family:var(--fh);font-size:15px;font-weight:700">Referral Tiers</div><div style="width:38px"></div></div>
+<div class="page-inner" style="overflow-y:auto;flex:1">
+<div class="gcard" style="padding:18px;margin-bottom:14px;animation:rise .4s ease both"><div class="info-tag">Your Referral Link</div><div class="ref-row" style="margin-top:8px"><div class="ref-box" id="refLinkPage">https://ji-brave.com/r/JoshuaIheanacho</div><button class="copy-btn" onclick="copyRef()">🔗 Copy</button></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button class="btn-gold" style="font-size:12px;padding:11px" onclick="shr('whatsapp')">💬 WhatsApp</button><button class="btn-glass" style="font-size:12px;padding:11px" onclick="shr('telegram')">✈️ Telegram</button></div></div>
+<div class="sec-head">Earning Tiers</div>
+<div class="ref-tier-card"><div class="current-tier-crown">🥉</div><div class="tier-badge bronze">🥉 Bronze</div><div class="tier-title">Getting Started</div><div class="tier-desc">0 – 9 referrals.</div><div class="tier-earn">$5.00 <span>per referral</span></div><div class="tier-prog-wrap"><div class="tier-prog-label"><span id="tierLbl0">Your referrals: 0</span><span>Target: 10</span></div><div class="tier-prog-bar"><div class="tier-prog-fill bronze" id="tierFill0" style="width:0%"></div></div></div></div>
+<div class="ref-tier-card"><div class="current-tier-crown">🥈</div><div class="tier-badge silver">🥈 Silver</div><div class="tier-title">Rising Earner</div><div class="tier-desc">10 – 24 referrals.</div><div class="tier-earn">$7.00 <span>per referral</span></div><div class="tier-prog-wrap"><div class="tier-prog-label"><span>Unlocks at: 10</span><span>Target: 25</span></div><div class="tier-prog-bar"><div class="tier-prog-fill silver" id="tierFill1" style="width:0%"></div></div></div></div>
+<div class="ref-tier-card"><div class="current-tier-crown">🥇</div><div class="tier-badge gold">🥇 Gold</div><div class="tier-title">Top Performer</div><div class="tier-desc">25 – 99 referrals.</div><div class="tier-earn">$10.00 <span>per referral</span></div><div class="tier-prog-wrap"><div class="tier-prog-label"><span>Unlocks at: 25</span><span>Target: 100</span></div><div class="tier-prog-bar"><div class="tier-prog-fill gold" id="tierFill2" style="width:0%"></div></div></div></div>
+<div class="ref-tier-card"><div class="current-tier-crown">💎</div><div class="tier-badge diamond">💎 Diamond</div><div class="tier-title">Legend Status</div><div class="tier-desc">100+ referrals.</div><div class="tier-earn">$15.00 <span>per referral</span></div><div class="tier-prog-wrap"><div class="tier-prog-label"><span>Unlocks at: 100</span><span>Unlimited</span></div><div class="tier-prog-bar"><div class="tier-prog-fill diamond" id="tierFill3" style="width:0%"></div></div></div></div>
+</div>
+</div>
+
+<!-- MY REFERRALS -->
+<div class="page" id="myReferralsPage">
+<div class="topbar"><div class="back-btn" onclick="goBack('homePage')">←</div><div class="logo-wordmark" style="font-family:var(--fh);font-size:15px;font-weight:700">My Referrals</div><div style="font-family:var(--fh);font-size:13px;font-weight:700;color:var(--success)" id="myRefEarn">$0.00</div></div>
+<div class="page-inner" style="overflow-y:auto;flex:1">
+<div class="ref-stats-row">
+<div class="ref-stat-card"><div class="rsc-val" id="myRefCount">0</div><div class="rsc-lbl">Referrals</div></div>
+<div class="ref-stat-card"><div class="rsc-val" id="myTier">🥉</div><div class="rsc-lbl">Your Tier</div></div>
+<div class="ref-stat-card"><div class="rsc-val">$5</div><div class="rsc-lbl">Per Invite</div></div>
+</div>
+<div class="gcard" style="padding:16px;margin-bottom:14px"><div class="sec-head">Your Referral Link</div><div class="ref-row"><div class="ref-box" id="refLinkPage2">https://ji-brave.com/r/JoshuaIheanacho</div><button class="copy-btn" onclick="copyRef()">🔗 Copy</button></div></div>
+<div class="sec-head">Recent Referrals</div>
+<div id="myRefList"><div style="text-align:center;padding:30px 20px;color:var(--ink3)"><div style="font-size:40px;margin-bottom:12px">👥</div><div style="font-family:var(--fh);font-size:14px;font-weight:700;margin-bottom:6px">No referrals yet</div><div style="font-size:12px;line-height:1.6">Share your link and earn $5.00<br>for every friend who registers.</div></div></div>
+<div class="gcard" style="padding:16px 18px;margin-top:8px"><div class="sec-head">Simulate a Referral</div><div style="font-size:12px;color:var(--ink2);margin-bottom:12px;line-height:1.6">Test how referral earnings work.</div><button class="btn-gold" style="font-size:13px" onclick="simulateReferral()">👥 Simulate Friend Joining (+$5.00)</button></div>
+</div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="page" id="leaderboardPage">
+<div class="topbar"><div class="back-btn" onclick="goBack('homePage')">←</div><div class="logo-wordmark" style="font-family:var(--fh);font-size:15px;font-weight:700">Leaderboard</div><div style="font-size:20px">🏆</div></div>
+<div class="page-inner" style="overflow-y:auto;flex:1">
+<div class="lb-prize-banner"><div class="lb-prize-ico">🎁</div><div class="lb-prize-txt"><strong>Weekly Prizes:</strong> Top 3 share $500 — 1st: $250 · 2nd: $150 · 3rd: $100.</div></div>
+<div class="lb-tabs"><div class="lb-tab on" onclick="switchLb(this,'weekly')">🔥 This Week</div><div class="lb-tab" onclick="switchLb(this,'alltime')">👑 All-Time</div></div>
+<div class="lb-header-card">
+<div style="font-family:var(--fh);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--ink3);margin-bottom:16px" id="lbPeriodLabel">THIS WEEK'S TOP EARNERS</div>
+<div class="lb-podium">
+<div class="lb-pod"><div class="lb-pod-av">🥈</div><div class="lb-pod-bar second">2</div><div class="lb-pod-name">NaijaKing_X</div><div class="lb-pod-earn">$1,055</div></div>
+<div class="lb-pod"><div class="lb-pod-av">🥇</div><div class="lb-pod-bar first">1</div><div class="lb-pod-name">ChiefReferrer</div><div class="lb-pod-earn">$1,420</div></div>
+<div class="lb-pod"><div class="lb-pod-av">🥉</div><div class="lb-pod-bar third">3</div><div class="lb-pod-name">GhanaGrind</div><div class="lb-pod-earn">$945</div></div>
+</div></div>
+<div id="lbList"></div>
+</div>
+</div>
+
+<!-- WITHDRAW -->
+<div class="page" id="withdrawPage">
+<div class="topbar"><div class="back-btn" onclick="goBack('homePage')">←</div><div class="logo-wordmark" style="font-family:var(--fh);font-size:15px;font-weight:700">Withdraw</div><div style="font-size:20px">💳</div></div>
+<div class="page-inner" style="overflow-y:auto;flex:1">
+<div class="wd-avail"><div class="wd-avail-lbl">Available Balance</div><div class="wd-avail-amt" id="wdAvailAmt">$10.00</div><div class="wd-avail-sub">Minimum withdrawal: $100.00</div></div>
+<div class="wd-min-warn">⚠️ You need at least <strong>$100.00</strong> to withdraw.</div>
+<div class="sec-head">Choose Payout Method</div>
+<div class="wd-method sel" onclick="selWd(this)"><div class="wd-method-ico">🌍</div><div class="wd-method-body"><div class="wd-method-name">Wise</div><div class="wd-method-sub">International transfer</div></div><div class="wd-method-tick">✓</div></div>
+<div class="wd-method" onclick="selWd(this)"><div class="wd-method-ico">🅿️</div><div class="wd-method-body"><div class="wd-method-name">PayPal</div><div class="wd-method-sub">Instant</div></div><div class="wd-method-tick">✓</div></div>
+<div class="wd-method" onclick="selWd(this)"><div class="wd-method-ico">🏦</div><div class="wd-method-body"><div class="wd-method-name">Bank Transfer</div><div class="wd-method-sub">2-5 business days</div></div><div class="wd-method-tick">✓</div></div>
+<div class="wd-method" onclick="selWd(this)"><div class="wd-method-ico">📱</div><div class="wd-method-body"><div class="wd-method-name">Mobile Money</div><div class="wd-method-sub">M-Pesa, MTN, Airtel</div></div><div class="wd-method-tick">✓</div></div>
+<div class="wd-method" onclick="selWd(this)"><div class="wd-method-ico">₿</div><div class="wd-method-body"><div class="wd-method-name">Crypto (USDT)</div><div class="wd-method-sub">TRC20 / ERC20</div></div><div class="wd-method-tick">✓</div></div>
+<div class="gcard" style="padding:18px 16px;margin:14px 0">
+<div class="fg"><label>Payout Address</label><div class="iw"><span class="iico">📤</span><input type="text" id="wdAddress" placeholder="Email, account, wallet…"></div></div>
+<div class="fg"><label>Amount (USD)</label><div class="iw"><span class="iico">💵</span><input type="number" id="wdAmount" placeholder="Min. $100.00" min="100"></div></div>
+</div>
+<div class="gcard" style="padding:14px 16px;margin-bottom:14px">
+<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-family:var(--fh);font-size:12px;color:var(--ink2)">Amount</span><span style="font-family:var(--fh);font-size:14px;font-weight:700" id="wdSumAmt">$0.00</span></div>
+<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-family:var(--fh);font-size:12px;color:var(--ink2)">Fee</span><span style="font-family:var(--fh);font-size:13px;color:var(--success)">FREE</span></div>
+<div style="display:flex;justify-content:space-between"><span style="font-family:var(--fh);font-size:13px;font-weight:700">You Receive</span><span style="font-family:var(--fh);font-size:18px;font-weight:900;color:var(--success)" id="wdSumTotal">$0.00</span></div>
+</div>
+<button class="btn-gold" onclick="doWithdraw()">💸 Request Withdrawal</button>
+<div style="text-align:center;margin-top:14px;font-family:var(--fh);font-size:10px;color:var(--ink3);letter-spacing:1px">🔐 SECURE · ENCRYPTED · VERIFIED</div>
+</div>
+</div>
+
+<!-- MENU DRAWER -->
+<div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
+<div class="menu-drawer" id="menuDrawer">
+<div class="menu-hd"><div class="menu-title">Menu</div><div class="menu-x" onclick="closeMenu()">✕</div></div>
+<div class="menu-items">
+<div class="mitem" onclick="menuNav('homepage')"><div class="mitem-ico">🌐</div><div class="mitem-body"><div class="mitem-ttl">Homepage</div></div><div class="mitem-arr">›</div></div>
+<div class="mitem active" onclick="menuNav('dashboard')"><div class="mitem-ico">🏠</div><div class="mitem-body"><div class="mitem-ttl">Dashboard</div></div><div class="mitem-arr">›</div></div>
+<div class="mitem" onclick="closeMenu();goTo('myReferralsPage')"><div class="mitem-ico">👥</div><div class="mitem-body"><div class="mitem-ttl">My Referrals</div></div><div class="mitem-arr">›</div></div>
+<div class="mitem" onclick="closeMenu();goTo('taskPage')"><div class="mitem-ico">📋</div><div class="mitem-body"><div class="mitem-ttl">Tasks</div></div><div class="mitem-arr">›</div></div>
+<div class="mitem" onclick="closeMenu();goTo('withdrawPage')"><div class="mitem-ico">💳</div><div class="mitem-body"><div class="mitem-ttl">Withdraw</div></div><div class="mitem-arr">›</div></div>
+<div class="mitem" onclick="closeMenu();goTo('leaderboardPage')"><div class="mitem-ico">🏆</div><div class="mitem-body"><div class="mitem-ttl">Leaderboard</div></div><div class="mitem-arr">›</div></div>
+<div class="mitem" onclick="closeMenu();goTo('referralsPage')"><div class="mitem-ico">🔗</div><div class="mitem-body"><div class="mitem-ttl">Referrals</div></div><div class="mitem-arr">›</div></div>
+<div class="mitem" onclick="closeMenu();goTo('depositPage')"><div class="mitem-ico" style="background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.2)">💰</div><div class="mitem-body"><div class="mitem-ttl">Deposit</div></div><div class="mitem-arr">›</div></div>
+</div>
+<div class="menu-footer"><div class="menu-user"><div class="menu-av">🦁</div><div><div class="menu-uname" id="menuName">Joshua Iheanacho</div><div class="menu-ubal" id="menuBal">Balance: $10.00</div></div></div></div>
+</div>
+
+<!-- DEPOSIT -->
+<div class="page" id="depositPage">
+<div class="topbar"><div class="back-btn" onclick="goBack('homePage')">←</div><div class="logo-wordmark" style="font-family:var(--fh);font-size:15px;font-weight:700">Deposit Funds</div><div style="width:38px"></div></div>
+<div style="padding:18px 16px 80px;position:relative;z-index:1;overflow-y:auto;flex:1">
+<div class="balance-hero" style="margin-bottom:14px"><div class="bal-aurora"></div><div class="bal-grid"></div><div class="bal-content"><div class="bal-label">Current Balance</div><div class="bal-amount" id="depBalAmt">$10.00</div><div class="bal-currency">Available to use</div></div></div>
+<div class="gcard" style="padding:20px 18px;margin-bottom:14px"><div class="info-tag">Enter Deposit Amount</div>
+<div class="dep-amount-wrap"><span class="dep-currency-sym">$</span><input type="number" id="depAmount" class="dep-input" placeholder="0.00" min="1" oninput="updateDepPresets()"></div>
+<div class="dep-presets">
+<button class="dep-preset" onclick="setDep(10)">$10</button><button class="dep-preset" onclick="setDep(25)">$25</button><button class="dep-preset" onclick="setDep(50)">$50</button><button class="dep-preset" onclick="setDep(100)">$100</button><button class="dep-preset" onclick="setDep(250)">$250</button><button class="dep-preset" onclick="setDep(500)">$500</button>
+</div></div>
+<div class="gcard" style="padding:18px 16px;margin-bottom:14px"><div class="info-tag">Choose Payment Method</div>
+<div class="pay-grid">
+<div class="pay-method active" onclick="selectPay(this,'card')"><div class="pm-ico">💳</div><div class="pm-name">Card</div><div class="pm-sub">Visa / MC</div></div>
+<div class="pay-method" onclick="selectPay(this,'bank')"><div class="pm-ico">🏦</div><div class="pm-name">Bank</div><div class="pm-sub">Transfer</div></div>
+<div class="pay-method" onclick="selectPay(this,'wise')"><div class="pm-ico">🌍</div><div class="pm-name">Wise</div><div class="pm-sub">International</div></div>
+<div class="pay-method" onclick="selectPay(this,'crypto')"><div class="pm-ico">₿</div><div class="pm-name">Crypto</div><div class="pm-sub">USDT</div></div>
+<div class="pay-method" onclick="selectPay(this,'paypal')"><div class="pm-ico">🅿️</div><div class="pm-name">PayPal</div><div class="pm-sub">Fast</div></div>
+<div class="pay-method" onclick="selectPay(this,'mobile')"><div class="pm-ico">📱</div><div class="pm-name">Mobile</div><div class="pm-sub">M-Pesa</div></div>
+</div></div>
+<div class="gcard" id="cardDetails" style="padding:18px 16px;margin-bottom:14px"><div class="info-tag">Card Details</div>
+<div class="fg"><label>Card Number</label><div class="iw"><span class="iico">💳</span><input type="text" id="cardNum" placeholder="1234 5678 9012 3456" maxlength="19" oninput="fmtCard(this)"></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="fg"><label>Expiry</label><div class="iw"><span class="iico">📅</span><input type="text" id="cardExp" placeholder="MM/YY" maxlength="5" oninput="fmtExpiry(this)"></div></div><div class="fg"><label>CVV</label><div class="iw"><span class="iico">🔒</span><input type="password" id="cardCvv" placeholder="•••" maxlength="4"></div></div></div>
+<div class="fg"><label>Cardholder Name</label><div class="iw"><span class="iico">👤</span><input type="text" id="cardName" placeholder="Name on card"></div></div>
+</div>
+<div class="gcard" style="padding:16px 18px;margin-bottom:16px">
+<div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="font-family:var(--fh);font-size:12px;color:var(--ink2)">Deposit Amount</span><span style="font-family:var(--fh);font-size:14px;font-weight:700" id="sumAmt">$0.00</span></div>
+<div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="font-family:var(--fh);font-size:12px;color:var(--ink2)">Fee</span><span style="font-family:var(--fh);font-size:14px;color:var(--success)">FREE</span></div>
+<div class="gold-line" style="margin:10px 0"></div>
+<div style="display:flex;justify-content:space-between"><span style="font-family:var(--fh);font-size:13px;font-weight:700">Total</span><span style="font-family:var(--fh);font-size:18px;font-weight:800;color:var(--aurora1)" id="sumTotal">$0.00</span></div>
+</div>
+<button class="btn-gold" onclick="processDeposit()">💰 Confirm Deposit</button>
+<div style="text-align:center;margin-top:14px;font-family:var(--fh);font-size:10px;color:var(--ink3);letter-spacing:1px">🔐 256-BIT SSL ENCRYPTED</div>
+</div>
+</div>
+
+<!-- CURRENCY PICKER -->
+<div class="curr-overlay" id="currOverlay" onclick="closeCurr()"></div>
+<div class="curr-sheet" id="currSheet">
+<div class="curr-handle"></div>
+<div class="curr-hd"><div class="curr-htit">🌐 Select Currency</div><div class="curr-hx" onclick="closeCurr()">✕</div></div>
+<div class="curr-sw"><span class="curr-sico">🔍</span><input class="curr-sinp" id="currSearch" type="text" placeholder="Search..." oninput="filterCurr(this.value)"></div>
+<div class="curr-list" id="currList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* TOAST */
+function showToast(m,t){var e=document.getElementById('toast');e.textContent=m;e.className='toast show'+(t?' '+t:'');setTimeout(function(){e.className='toast'},2800);}
+
+/* AURORA */
+(function(){var cv=document.getElementById('bg-canvas'),cx=cv.getContext('2d'),W,H,orbs=[];function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}rs();addEventListener('resize',rs);var c=[[201,146,42],[180,120,30],[15,244,198],[0,180,255],[120,80,20]];for(var i=0;i<5;i++){orbs.push({x:Math.random()*W,y:Math.random()*H,r:120+Math.random()*180,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,col:c[i],a:.06+Math.random()*.08})}function dr(){cx.clearRect(0,0,W,H);orbs.forEach(function(o){o.x+=o.vx;o.y+=o.vy;if(o.x<-o.r||o.x>W+o.r)o.vx*=-1;if(o.y<-o.r||o.y>H+o.r)o.vy*=-1;var g=cx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);g.addColorStop(0,'rgba('+o.col+', '+o.a+')');g.addColorStop(1,'rgba(0,0,0,0)');cx.beginPath();cx.arc(o.x,o.y,o.r,0,Math.PI*2);cx.fillStyle=g;cx.fill()});requestAnimationFrame(dr)}dr()})();
+
+/* NAV */
+var navH=[];
+function goTo(id){var cur=document.querySelector('.page.active');if(!cur)return;cur.classList.remove('active');navH.push(cur.id);setTimeout(function(){onPageEnter(id)},50);var nx=document.getElementById(id);if(!nx)return;nx.classList.add('active','enter');setTimeout(function(){nx.classList.remove('enter')},450);nx.scrollTop=0}
+function goBack(fb){var cur=document.querySelector('.page.active');if(!cur)return;cur.classList.remove('active');var pv=document.getElementById(navH.pop()||fb);if(pv){pv.classList.add('active','back');setTimeout(function(){pv.classList.remove('back')},450)}}
+
+/* LOGIN */
+function doLogin(){var u=document.getElementById('l-user').value.trim(),p=document.getElementById('l-pass').value.trim();if(!u||!p){showToast('Fill in all fields','err');return}var dn=u;if(u.indexOf('@')>-1)dn=u.split('@')[0].replace(/[._-]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase()});else dn=u.replace(/[._-]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase()});setUserName(dn);showToast('Signing you in…','ok');setTimeout(function(){goTo('homePage')},1400)}
+
+/* SIGNUP */
+function doSignup(){var fn=document.getElementById('s-fn').value.trim(),ln=document.getElementById('s-ln').value.trim(),un=document.getElementById('s-username').value.trim(),em=document.getElementById('s-email').value.trim(),ct=document.getElementById('s-country').value,pw=document.getElementById('s-pass').value,pw2=document.getElementById('s-pass2').value,tc=document.getElementById('s-terms').checked;if(!fn||!ln){showToast('Enter your full name','err');return}if(!un){showToast('Choose a username','err');return}if(!em||em.indexOf('@')<0){showToast('Invalid email','err');return}if(!ct){showToast('Select your country','err');return}if(pw.length<8){showToast('Password must be 8+ chars','err');return}if(pw!==pw2){showToast('Passwords do not match','err');return}if(!tc){showToast('Accept terms to continue','err');return}setUserName(fn+' '+ln);showToast('Account created! Welcome 🎉','ok');setTimeout(function(){goTo('homePage')},1700)}
+
+/* HELPERS */
+function toggleEye(id,btn){var inp=document.getElementById(id);inp.type=inp.type==='password'?'text':'password';btn.textContent=inp.type==='password'?'👁':'🙈'}
+function chkStr(v){var s=0;if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;var cl=['#ff4d6d','#f59e0b','#3b82f6','#00e5a0'],lb=['Weak','Fair','Good','Strong'];['ss1','ss2','ss3','ss4'].forEach(function(id,i){document.getElementById(id).style.background=i<s?cl[s-1]:'var(--glass3)'});var l=document.getElementById('strLbl');l.textContent=v.length===0?'Enter a password':lb[s-1]||'Weak';l.style.color=v.length===0?'var(--ink3)':cl[s-1]||'#ff4d6d'}
+
+/* MENU */
+function openMenu(){document.getElementById('menuOverlay').classList.add('open');document.getElementById('menuDrawer').classList.add('open')}
+function closeMenu(){document.getElementById('menuOverlay').classList.remove('open');document.getElementById('menuDrawer').classList.remove('open')}
+function menuNav(s){closeMenu();if(s==='dashboard')goTo('homePage');else showToast(s+' — coming soon','ok')}
+
+/* SHARE */
+function shr(p){var lk=document.getElementById('refLink').innerText,mg=encodeURIComponent('Join JI_BRAVE USD — earn $5 per invite! 👉 '+lk),ur={whatsapp:'https://wa.me/?text='+mg,telegram:'https://t.me/share/url?url='+encodeURIComponent(lk)+'&text='+mg,facebook:'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(lk),email:'mailto:?subject=Join JI_BRAVE USD&body='+mg,sms:'sms:?body='+mg,messenger:'fb-messenger://share?link='+encodeURIComponent(lk)};if(p==='share'&&navigator.share){navigator.share({title:'JI_BRAVE USD',text:'Earn $5 per invite!',url:lk})}else if(ur[p]){window.open(ur[p],'_blank')}else{copyRef()}}
+function copyRef(){navigator.clipboard.writeText(document.getElementById('refLink').innerText).catch(function(){});showToast('Referral link copied!','ok')}
+
+/* NAV */
+function navClick(el){document.querySelectorAll('.bnav-it').forEach(function(n){n.classList.remove('on');var d=n.querySelector('.bnav-pip');if(d)d.remove()});el.classList.add('on');var pip=document.createElement('div');pip.className='bnav-pip';el.appendChild(pip)}
+
+/* NOTIFS */
+var NOTIFS=[{u:'@Finn',m:'Finn just got paid $509.52 via Wise'},{u:'@Grace',m:'Grace earned $150.00 referral bonus'},{u:'@David',m:'David withdrew $340.00 via PayPal'},{u:'@Sarah',m:'Sarah received $75.00 bonus'},{u:'@Mike',m:'Mike earned $200.00 from 40 referrals'},{u:'@Linda',m:'Linda received $250.00 via Wise'},{u:'@James',m:'James got paid $125.00'}];
+var nIdx=0,nSec=9;
+setInterval(function(){nSec++;var e=document.getElementById('nTime');if(e)e.textContent=nSec+' seconds ago'},1000);
+setInterval(function(){var n=NOTIFS[nIdx++%NOTIFS.length];document.getElementById('nUser').textContent=n.u;document.getElementById('nMsg').textContent=n.m;nSec=Math.floor(Math.random()*15)+3;document.getElementById('nTime').textContent=nSec+' seconds ago'},6000);
+
+/* CURRENCY */
+var CURRENCIES=[{flag:'🇺🇸',country:'United States',code:'USD',symbol:'$',rate:1,group:'⭐ Popular'},{flag:'🇬🇧',country:'United Kingdom',code:'GBP',symbol:'£',rate:0.79,group:'⭐ Popular'},{flag:'🇪🇺',country:'Euro Zone',code:'EUR',symbol:'€',rate:0.92,group:'⭐ Popular'},{flag:'🇨🇦',country:'Canada',code:'CAD',symbol:'CA$',rate:1.37,group:'⭐ Popular'},{flag:'🇦🇺',country:'Australia',code:'AUD',symbol:'A$',rate:1.54,group:'⭐ Popular'},{flag:'🇯🇵',country:'Japan',code:'JPY',symbol:'¥',rate:149.5,group:'⭐ Popular'},{flag:'🇳🇬',country:'Nigeria',code:'NGN',symbol:'₦',rate:1540,group:'🌍 Africa'},{flag:'🇬🇭',country:'Ghana',code:'GHS',symbol:'₵',rate:13.8,group:'🌍 Africa'},{flag:'🇰🇪',country:'Kenya',code:'KES',symbol:'KSh',rate:129,group:'🌍 Africa'},{flag:'🇿🇦',country:'South Africa',code:'ZAR',symbol:'R',rate:18.6,group:'🌍 Africa'},{flag:'🇮🇳',country:'India',code:'INR',symbol:'₹',rate:83.1,group:'🌏 Asia'},{flag:'🇨🇳',country:'China',code:'CNY',symbol:'¥',rate:7.24,group:'🌏 Asia'},{flag:'🇦🇪',country:'UAE',code:'AED',symbol:'د.إ',rate:3.67,group:'🌏 Asia'},{flag:'🇧🇷',country:'Brazil',code:'BRL',symbol:'R$',rate:4.97,group:'🌎 Americas'},{flag:'🇲🇽',country:'Mexico',code:'MXN',symbol:'$',rate:17.2,group:'🌎 Americas'}];
+var selCurr=CURRENCIES[0];
+function buildCurrList(list){var el=document.getElementById('currList'),grps={};list.forEach(function(x){if(!grps[x.group])grps[x.group]=[];grps[x.group].push(x)});el.innerHTML=Object.keys(grps).map(function(g){return '<div class="cgrp-lbl">'+g+'</div>'+grps[g].map(function(x){return '<div class="citem '+(x.code===selCurr.code?'sel':'')+'" onclick="selectCurr('+JSON.stringify(x).replace(/'/g,'&#39;')+')"><div class="cflag">'+x.flag+'</div><div class="cbody"><div class="cname">'+x.country+'</div><div class="ccode">'+x.code+' · '+x.symbol+'</div></div><div class="crate">1 USD = '+(x.rate>=1?x.rate:x.rate)+' '+x.code+'</div><div class="cchk">✓</div></div>'}).join('')}).join('')}
+function filterCurr(q){q=q.toLowerCase();buildCurrList(CURRENCIES.filter(function(c){return c.country.toLowerCase().indexOf(q)>-1||c.code.toLowerCase().indexOf(q)>-1}))}
+function openCurr(){document.getElementById('currSearch').value='';buildCurrList(CURRENCIES);document.getElementById('currOverlay').classList.add('open');document.getElementById('currSheet').classList.add('open')}
+function closeCurr(){document.getElementById('currOverlay').classList.remove('open');document.getElementById('currSheet').classList.remove('open')}
+function selectCurr(c){selCurr=c;document.querySelectorAll('.curr-badge').forEach(function(el){el.innerHTML=c.flag+' '+c.code+' <span class="pill-arrow">▾</span>'});refreshBalDisplay();closeCurr();showToast('Currency → '+c.code,'ok')}
+
+/* SET USERNAME */
+function setUserName(name){['balName','menuName'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=name});var slug=name.replace(/\s+/g,'').replace(/[^a-zA-Z0-9]/g,'');var lk='https://ji-brave.com/r/'+slug;['refLink','refLinkPage','refLinkPage2'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=lk})}
+
+/* DEPOSIT */
+var selectedPayMethod='card';
+function selectPay(el,m){document.querySelectorAll('.pay-method').forEach(function(p){p.classList.remove('active')});el.classList.add('active');selectedPayMethod=m;document.getElementById('cardDetails').style.display=m==='card'?'block':'none'}
+function setDep(a){document.getElementById('depAmount').value=a;updateDepPresets();document.querySelectorAll('.dep-preset').forEach(function(b){b.classList.remove('sel')});if(event&&event.target)event.target.classList.add('sel')}
+function updateDepPresets(){var v=parseFloat(document.getElementById('depAmount').value)||0,s=selCurr?selCurr.symbol:'$';document.getElementById('sumAmt').textContent=s+v.toFixed(2);document.getElementById('sumTotal').textContent=s+v.toFixed(2)}
+function fmtCard(inp){var v=inp.value.replace(/\D/g,'').substring(0,16);inp.value=v.replace(/(\d{4})/g,'$1 ').trim()}
+function fmtExpiry(inp){var v=inp.value.replace(/\D/g,'').substring(0,4);if(v.length>=2)v=v.substring(0,2)+'/'+v.substring(2);inp.value=v}
+function processDeposit(){var a=parseFloat(document.getElementById('depAmount').value)||0;if(a<1){showToast('Enter a valid amount','err');return}if(selectedPayMethod==='card'){var cn=document.getElementById('cardNum').value.replace(/\s/g,''),ce=document.getElementById('cardExp').value,cv=document.getElementById('cardCvv').value,cn2=document.getElementById('cardName').value.trim();if(cn.length<16){showToast('Enter a valid card number','err');return}if(!ce||ce.indexOf('/')<0){showToast('Enter card expiry','err');return}if(cv.length<3){showToast('Enter CVV','err');return}if(!cn2){showToast('Enter cardholder name','err');return}}showToast('Processing deposit…','ok');setTimeout(function(){showToast('✅ Deposit successful!','ok');setTimeout(function(){goBack('homePage')},1200)},2000)}
+
+/* WITHDRAW LIVE */
+document.addEventListener('input',function(e){if(e.target.id==='wdAmount'){var v=parseFloat(e.target.value)||0,s=selCurr?selCurr.symbol:'$';var sa=document.getElementById('wdSumAmt'),st=document.getElementById('wdSumTotal');if(sa)sa.textContent=s+v.toFixed(2);if(st)st.textContent=s+v.toFixed(2)}});
+
+/* STATE */
+var appState={balance:10,earned:0,taskEarned:0,referrals:0,streak:0,checkedInToday:false,completedTasks:{},currentTab:'all',lbMode:'weekly'};
+function saveState(){try{localStorage.setItem('jibrave_state',JSON.stringify(appState))}catch(e){}}
+function loadState(){try{var s=localStorage.getItem('jibrave_state');if(s){var p=JSON.parse(s);for(var k in p){if(p.hasOwnProperty(k))appState[k]=p[k]}}}catch(e){}}
+
+/* TASKS */
+var TASKS=[{id:'v1',type:'video',title:'Watch: Crypto Explained in 60s',desc:'Educational video',reward:0.50,duration:30,icon:'📹'},{id:'v2',type:'video',title:'Watch: How Referrals Work',desc:'Tutorial video',reward:0.35,duration:25,icon:'🎬'},{id:'v3',type:'video',title:'Watch: Top 5 Ways to Earn Online',desc:'Tips video',reward:0.75,duration:45,icon:'🎥'},{id:'v4',type:'video',title:'Watch: Success Story $500/Week',desc:'Testimonial',reward:0.40,duration:30,icon:'📱'},{id:'v5',type:'video',title:'Watch: Power of Compound Referrals',desc:'Strategy',reward:1.00,duration:60,icon:'💡'},{id:'s1',type:'survey',title:'Survey: Online Shopping Habits',desc:'7 questions · 2 mins',reward:1.50,questions:7,icon:'📋'},{id:'s2',type:'survey',title:'Survey: Social Media Usage',desc:'5 questions · 90s',reward:1.00,questions:5,icon:'📊'},{id:'s3',type:'survey',title:'Survey: Financial Goals 2025',desc:'8 questions · 3 mins',reward:2.00,questions:8,icon:'💰'},{id:'s4',type:'survey',title:'Survey: App Experience',desc:'4 questions · 1 min',reward:0.75,questions:4,icon:'⭐'},{id:'s5',type:'survey',title:'Survey: Work & Income',desc:'6 questions · 2 mins',reward:1.25,questions:6,icon:'💼'}];
+var SURVEY_QS=[{q:'How often do you shop online?',o:['Daily','Weekly','Monthly','Rarely']},{q:'Which platform do you shop on most?',o:['Amazon','eBay','Jumia','Other']},{q:'What is your main financial goal?',o:['Save money','Invest','Pay off debt','Build wealth']},{q:'How do you mostly earn income?',o:['Full-time job','Freelance','Online','Passive income']},{q:'Which social media do you use most?',o:['WhatsApp','Instagram','TikTok','Twitter/X']},{q:'How many hours online per day?',o:['1-2 hours','3-5 hours','6-8 hours','8+ hours']},{q:'Would you recommend JI_BRAVE USD?',o:['Definitely yes','Probably yes','Not sure','No']},{q:'How did you find JI_BRAVE USD?',o:['Referral link','Social media','Search','Friend']}];
+var STREAK_R=[0.10,0.20,0.30,0.50,0.75,1.00,2.00],STREAK_L=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function buildStreakRow(){var row=document.getElementById('streakRow');if(!row)return;row.innerHTML=STREAK_L.map(function(d,i){var done=i<appState.streak,today=i===appState.streak&&!appState.checkedInToday,cls=done?'done':today?'today':'',ico=done?'✅':today?'🎁':'⬜';return '<div class="streak-day '+cls+'"><span class="sd-ico">'+ico+'</span><div class="sd-lbl">'+d+'</div><div class="sd-amt">$'+STREAK_R[i].toFixed(2)+'</div></div>'}).join('');var btn=document.getElementById('checkinBtn'),sc=document.getElementById('streakCount');if(btn){btn.disabled=appState.checkedInToday;btn.textContent=appState.checkedInToday?'✅ Already Claimed Today!':'✅ Claim Today\'s Bonus'}if(sc)sc.textContent=appState.streak+' day streak'}
+function doCheckin(){if(appState.checkedInToday){showToast('Already claimed today!','err');return}var rw=STREAK_R[Math.min(appState.streak,6)];appState.balance+=rw;appState.earned+=rw;appState.taskEarned+=rw;appState.checkedInToday=true;appState.streak=Math.min(appState.streak+1,7);saveState();buildStreakRow();refreshBalDisplay();showToast('🎁 +$'+rw.toFixed(2)+' bonus claimed!','ok')}
+
+function buildTaskList(filter){filter=filter||'all';var list=document.getElementById('taskList');if(!list)return;var tasks=filter==='all'?TASKS:TASKS.filter(function(t){return t.type===filter});list.innerHTML=tasks.map(function(t,i){var done=appState.completedTasks[t.id],cls=done?'done':t.type==='video'?'video':'survey';return '<div class="task-card" style="animation-delay:'+i*0.05+'s"><div class="task-ico-wrap '+cls+'" style="position:relative">'+t.icon+(done?'<div class="task-done-badge">✓</div>':'')+'</div><div class="task-body"><div class="task-title">'+t.title+'</div><div class="task-desc">'+t.desc+'</div><div class="task-reward">💵 +$'+t.reward.toFixed(2)+'</div></div>'+(done?'<button class="task-action done-btn">✓ Done</button>':'<button class="task-action" onclick="startTask(\''+t.id+'\')">'+(t.type==='video'?'▶ Watch':'📋 Start')+'</button>')+'</div>'}).join('');var el=document.getElementById('taskEarnTotal');if(el)el.textContent='+$'+appState.taskEarned.toFixed(2)}
+function switchTab(el,filter){document.querySelectorAll('.ttab').forEach(function(t){t.classList.remove('on')});el.classList.add('on');appState.currentTab=filter;buildTaskList(filter)}
+
+var videoInterval=null,currentVideoTask=null;
+function startTask(id){var task=TASKS.filter(function(t){return t.id===id})[0];if(!task)return;currentVideoTask=task;if(task.type==='video')openVideo(task);else openSurvey(task)}
+function openVideo(task){var ov=document.getElementById('videoOverlay');if(!ov)return;ov.classList.add('open');document.getElementById('videoTitle').textContent=task.title;var secs=task.duration;document.getElementById('videoTimer').textContent='0:'+String(secs).padStart(2,'0');document.getElementById('videoProgBar').style.width='0%';document.getElementById('videoLabel').textContent='Watch the full video to earn $'+task.reward.toFixed(2);clearInterval(videoInterval);var el=0;videoInterval=setInterval(function(){el++;document.getElementById('videoTimer').textContent='0:'+String(task.duration-el).padStart(2,'0');document.getElementById('videoProgBar').style.width=(el/task.duration*100)+'%';if(el>=task.duration){clearInterval(videoInterval);document.getElementById('videoLabel').textContent='✅ Video complete!';completeTask(task);setTimeout(function(){closeVideo(true)},1200)}},1000)}
+function closeVideo(done){clearInterval(videoInterval);var ov=document.getElementById('videoOverlay');if(ov)ov.classList.remove('open');if(!done&&currentVideoTask)showToast('Watch the full video to earn!','err')}
+
+var surveyTask=null,surveyQI=0,surveySel=null;
+function openSurvey(task){surveyTask=task;surveyQI=0;surveySel=null;var ov=document.getElementById('surveyOverlay');if(ov)ov.classList.add('open');document.getElementById('surveyReward').textContent=task.reward.toFixed(2);renderSQ()}
+function renderSQ(){var total=surveyTask?surveyTask.questions:7,qd=SURVEY_QS[surveyQI%SURVEY_QS.length];document.getElementById('surveyQNum').textContent='Question '+(surveyQI+1)+' of '+total;document.getElementById('surveyQ').textContent=qd.q;document.getElementById('surveyProgFill').style.width=((surveyQI+1)/total*100)+'%';surveySel=null;document.getElementById('surveyOpts').innerHTML=qd.o.map(function(o){return '<div class="survey-opt" onclick="selectSO(this)">'+o+'</div>'}).join('')}
+function selectSO(el){document.querySelectorAll('.survey-opt').forEach(function(o){o.classList.remove('selected')});el.classList.add('selected');surveySel=el.textContent}
+function nextSurveyQ(){if(!surveySel){showToast('Please select an answer','err');return}surveyQI++;if(surveyQI>=(surveyTask?surveyTask.questions:7)){closeSurvey();completeTask(surveyTask);return}renderSQ()}
+function closeSurvey(){var ov=document.getElementById('surveyOverlay');if(ov)ov.classList.remove('open')}
+function completeTask(task){if(appState.completedTasks[task.id])return;appState.completedTasks[task.id]=true;appState.balance+=task.reward;appState.earned+=task.reward;appState.taskEarned+=task.reward;saveState();refreshBalDisplay();buildTaskList(appState.currentTab);showToast('🎉 +$'+task.reward.toFixed(2)+' earned!','ok')}
+
+/* LEADERBOARD */
+var LB_DATA=[{name:'ChiefReferrer',refs:284,earn:1420,av:'👑'},{name:'NaijaKing_X',refs:211,earn:1055,av:'🦁'},{name:'GhanaGrind',refs:189,earn:945,av:'🔥'},{name:'BraveEarner01',refs:156,earn:780,av:'💎'},{name:'MoneyMovesMike',refs:143,earn:715,av:'🚀'},{name:'RefQueenGrace',refs:128,earn:640,av:'⭐'},{name:'HustleHard_KE',refs:112,earn:560,av:'💪'},{name:'SilentEarner',refs:98,earn:490,av:'🎯'},{name:'JI_BRAVE_Joshua',refs:0,earn:0,av:'🦁',isYou:true},{name:'DailyGrinder99',refs:71,earn:355,av:'⚡'}];
+function buildLb(){var list=document.getElementById('lbList'),label=document.getElementById('lbPeriodLabel');if(!list)return;if(label)label.textContent=appState.lbMode==='weekly'?"THIS WEEK'S TOP EARNERS":'ALL-TIME TOP EARNERS';var sorted=LB_DATA.slice().sort(function(a,b){return appState.lbMode==='weekly'?b.refs-a.refs:b.earn-a.earn});list.innerHTML=sorted.map(function(p,i){return '<div class="lb-row '+(p.isYou?'lb-you-row':'')+'" style="animation-delay:'+i*0.04+'s"><div class="lb-rank">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1))+'</div><div class="lb-av">'+p.av+'</div><div class="lb-body"><div class="lb-name">'+(p.isYou?'You ('+p.name+')':p.name)+'</div><div class="lb-refs">'+p.refs+' referrals</div></div><div class="lb-earn">$'+p.earn.toFixed(2)+'</div></div>'}).join('')}
+function switchLb(el,m){document.querySelectorAll('.lb-tab').forEach(function(t){t.classList.remove('on')});el.classList.add('on');appState.lbMode=m;buildLb()}
+
+/* REFERRALS */
+var MOCK_N=[{n:'Adaeze O.',av:'👩🏾'},{n:'Emeka K.',av:'👨🏾'},{n:'Blessing T.',av:'👩🏿'},{n:'Chidi M.',av:'👨🏿'},{n:'Fatimah A.',av:'🧕🏾'},{n:'David S.',av:'👨🏽'},{n:'Grace N.',av:'👩🏽'},{n:'Kwame B.',av:'👨🏾'},{n:'Amira J.',av:'👩🏻'},{n:'Seun F.',av:'🧑🏾'}];
+function simulateReferral(){var t=appState.referrals<MOCK_N.length?MOCK_N[appState.referrals]:{n:'Friend #'+(appState.referrals+1),av:'👤'};appState.referrals++;var rate=appState.referrals>=100?15:appState.referrals>=25?10:appState.referrals>=10?7:5;appState.balance+=rate;appState.earned+=rate;var you=LB_DATA.filter(function(x){return x.isYou})[0];if(you){you.refs=appState.referrals;you.earn=appState.referrals*rate}saveState();refreshBalDisplay();refreshMyRef();showToast('🎉 +$'+rate+'.00 — friend joined!','ok')}
+function refreshMyRef(){var cnt=document.getElementById('myRefCount'),te=document.getElementById('myTier');if(cnt)cnt.textContent=appState.referrals;var tier=appState.referrals>=100?'💎':appState.referrals>=25?'🥇':appState.referrals>=10?'🥈':'🥉';if(te)te.textContent=tier;var list=document.getElementById('myRefList');if(!list)return;if(appState.referrals===0){list.innerHTML='<div style="text-align:center;padding:30px 20px;color:var(--ink3)"><div style="font-size:40px;margin-bottom:12px">👥</div><div style="font-family:var(--fh);font-size:14px;font-weight:700;margin-bottom:6px">No referrals yet</div><div style="font-size:12px;line-height:1.6">Share your link and earn $5.00</div></div>';return}var items=[];for(var i=0;i<Math.min(appState.referrals,MOCK_N.length);i++){var m=MOCK_N[i],rate=appState.referrals>=100?15:appState.referrals>=25?10:appState.referrals>=10?7:5,ago=i===0?'Just now':i===1?'2 min ago':i<5?(i*8)+' min ago':(i*2+1)+' hrs ago';items.push('<div class="ref-item"><div class="ref-av">'+m.av+'</div><div class="ref-body"><div class="ref-name">'+m.n+'</div><div class="ref-date">Registered · '+ago+'</div></div><div class="ref-amt">+$'+rate+'.00</div></div>')}list.innerHTML=items.join('')}
+
+function selWd(el){document.querySelectorAll('.wd-method').forEach(function(m){m.classList.remove('sel')});el.classList.add('sel')}
+function doWithdraw(){var addr=document.getElementById('wdAddress').value.trim(),amt=parseFloat(document.getElementById('wdAmount').value)||0;if(!addr){showToast('Enter your payout address','err');return}if(amt<100){showToast('Minimum withdrawal is $100.00','err');return}if(amt>appState.balance){showToast('Insufficient balance','err');return}showToast('Withdrawal request submitted!','ok')}
+
+function refreshBalDisplay(){var sym=selCurr?selCurr.symbol:'$',rate=selCurr?selCurr.rate:1,bal=(appState.balance*rate).toFixed(2),earn=(appState.earned*rate).toFixed(2);function el(id,v){var e=document.getElementById(id);if(e)e.textContent=v}el('balAmount',sym+parseFloat(bal).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));el('earnVal',sym+earn);el('earnDisp',sym+earn);el('wdAvailAmt',sym+bal);el('depBalAmt',sym+bal);el('menuBal','Balance: '+sym+bal);el('taskEarnTotal','+$'+appState.taskEarned.toFixed(2));el('myRefEarn',sym+(appState.referrals*5).toFixed(2))}
+
+function onPageEnter(id){if(id==='taskPage'){buildStreakRow();buildTaskList(appState.currentTab)}if(id==='leaderboardPage')buildLb();if(id==='referralsPage'){var rl=document.getElementById('refLinkPage');if(rl)rl.textContent=document.getElementById('refLink').textContent;var r=appState.referrals,pcts=[Math.min(r/10*100,100),Math.max(0,Math.min((r-10)/15*100,100)),Math.max(0,Math.min((r-25)/75*100,100)),Math.max(0,(r-100))];['tierFill0','tierFill1','tierFill2','tierFill3'].forEach(function(fid,i){var f=document.getElementById(fid);if(f)f.style.width=Math.max(0,Math.min(pcts[i],100))+'%'});var tl=document.getElementById('tierLbl0');if(tl)tl.textContent='Your referrals: '+r}if(id==='myReferralsPage')refreshMyRef();refreshBalDisplay()}
+
+/* INIT */
+loadState();
+refreshBalDisplay();
+</script>
+</body>
+</html>
